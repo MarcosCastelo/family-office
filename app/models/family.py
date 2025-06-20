@@ -1,6 +1,7 @@
 from app.config.extensions import db
 
 class Family(db.Model):
+    __tablename__ = "family"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     
