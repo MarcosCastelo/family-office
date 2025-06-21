@@ -8,7 +8,7 @@ user_family = db.Table('user_family',
 
 user_permission = db.Table('user_permission',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
-    db.Column('family_id', db.Integer, db.ForeignKey('family.id'))
+    db.Column('permission_id', db.Integer, db.ForeignKey('permission.id'))
 )
 
 class User(db.Model):

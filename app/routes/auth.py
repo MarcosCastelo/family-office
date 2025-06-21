@@ -13,12 +13,12 @@ def register():
     user.set_password(data["password"])
     db.session.add(user)
     db.session.commit()
-    return jsonify(message="Usuário criado com sucesso"), 201
+    return jsonify(message="Usuario criado com sucesso"), 201
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.json
     auth = authenticate(data["email"], data["password"])
     if not auth:
-        return jsonify({"error": "Credenciais inválidas"}), 401
+        return jsonify({"error": "Credenciais invalidas"}), 401
     return jsonify(auth), 200

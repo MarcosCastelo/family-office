@@ -4,10 +4,9 @@ from .config.extensions import db, jwt, cors, migrate
 from app.routes import auth, family
 
 def create_app():
+    from app.models import User,Family,Permission
     app = Flask(__name__)
     app.config.from_object(Config)
-    
-    print(">>> DATABASE URI:", app.config["SQLALCHEMY_DATABASE_URI"])
     
     db.init_app(app)
     jwt.init_app(app)
