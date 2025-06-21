@@ -1,7 +1,7 @@
 from flask import Flask
 from .config.config import Config
 from .config.extensions import db, jwt, cors, migrate
-from app.routes import auth, family
+from app.routes import auth, family, asset
 
 def create_app():
     from app.models import User,Family,Permission
@@ -15,5 +15,6 @@ def create_app():
     
     app.register_blueprint(auth.auth_bp)
     app.register_blueprint(family.family_bp)
+    app.register_blueprint(asset.asset_bp)
     
     return app

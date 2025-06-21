@@ -15,3 +15,8 @@ def require_family(family_id_param="family_id"):
             return f(*args, **kwargs)
         return wrapper
     return decorator
+
+def check_family_access(family_id):
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    return any(f.id == int(family_id) for f in user.families)

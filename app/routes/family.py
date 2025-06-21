@@ -4,8 +4,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.family import Family
 from app.models.user import User
 from app.config.extensions import db
+from app.schema.family_schema import FamilySchema
 
 family_bp = Blueprint("family", __name__, url_prefix="/family")
+family_schema = FamilySchema()
 
 @family_bp.route("/join/<int:family_id>", methods=["POST"])
 @jwt_required()
