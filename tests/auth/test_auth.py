@@ -1,4 +1,4 @@
-"""Testes relacionados a autoriação e criação de usuário"""
+"""Testes relacionados a autorização e criação de usuário"""
 
 def test_register_user(client):
     """Receive client check if user are created"""
@@ -22,4 +22,4 @@ def test_login_user(client):
 
     assert response.status_code == 200
     json = response.get_json()
-    assert "access_token" in json
+    assert "access_token" in json 

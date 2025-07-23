@@ -1,0 +1,148 @@
+[Prompt Técnico Completo para Sistema de Family Office Digital]
+
+🔧 1. ARQUITETURA DO SISTEMA
+
+Desenvolver um sistema modular com:
+- Painel principal (dashboard)
+- Cadastro de ativos por classe
+- Análise de risco individual e agregado
+- Gerador de relatórios estratégicos e fiscais
+- Alertas automáticos
+
+Interface simplificada, responsiva e com foco em clareza visual.
+
+📚 2. CLASSES DE ATIVOS E ESTRUTURA DE CADASTRO
+
+Cada ativo será cadastrado com base em sua classe primária, conforme estrutura abaixo:
+
+1. Renda Fixa
+   - Tipos: Tesouro Direto, CDB, LCI/LCA, CRI/CRA, Debêntures, Fundos de RF
+   - Campos: indexador, vencimento, taxa, instituição emissora, isenção
+
+2. Renda Variável
+   - Tipos: Ações, ETFs, BDRs, Fundos de ações, Holdings
+   - Campos: ticker, quantidade, preço médio, data de compra, setor, bolsa
+
+3. Multimercados / Hedge Funds
+   - Tipos: Macro, Long & Short, Quant, Absolute Return
+   - Campos: gestora, objetivo, benchmark, rating Anbima
+
+4. Ativos Reais
+   - Tipos: Imóveis residenciais/comerciais, FIIs, infraestrutura, agro
+   - Campos: localização, valor estimado, receita mensal, índice de vacância
+
+5. Ativos Estratégicos
+   - Tipos: Private Equity, Startups, Fundos Exclusivos, Holdings Patrimoniais
+   - Campos: participação (%), valor de entrada, controle societário
+
+6. Internacionais
+   - Tipos: Offshore, Bonds, REITs, Trusts, Moedas
+   - Campos: país, banco custodiante, moeda, hedge
+
+7. Alternativos
+   - Tipos: Criptoativos, NFTs, Arte, Colecionáveis
+   - Campos: custódia, liquidez estimada, avaliação externa
+
+8. Instrumentos de Proteção
+   - Tipos: Seguros, Precatórios, Recebíveis
+   - Campos: apólice, vencimento, lastro, devedor
+
+Cada classe deve ter formulário de entrada dedicado com campos obrigatórios específicos.
+
+📊 3. ANÁLISE DE RISCO INDIVIDUAL POR ATIVO
+
+Para cada ativo, incluir uma aba de risco com os seguintes critérios:
+- Risco de mercado
+- Risco de liquidez
+- Risco de concentração
+- Risco de crédito (se aplicável)
+- Risco cambial (direto e indireto)
+- Risco jurídico/fiscal
+- Score de governança
+- Classificação final: baixo / médio / alto / crítico
+
+📈 4. AVALIAÇÃO DA CARTEIRA CONSOLIDADA
+
+Calcular pontuação de risco global da carteira, entre 0 e 100, baseada nos seguintes pesos:
+- Concentração: 30%
+- Volatilidade: 20%
+- Liquidez agregada: 20%
+- Exposição cambial: 15%
+- Risco fiscal/regulatório: 15%
+
+Exibir:
+- Gráficos de pizza (por classe, setor, moeda, indexador)
+- Radar de perfil de risco vs. alocação atual
+- Tabela de ativos com alertas destacados
+
+🔔 5. SISTEMA DE ALERTAS AUTOMATIZADOS
+
+Emitir alertas quando:
+- Um ativo ultrapassa 30% da carteira
+- Há mais de 50% da carteira em ativos ilíquidos (> 15 dias para resgate)
+- O score de risco global ultrapassa 70
+- Um ativo sofre downgrade, inadimplência ou vacância crítica
+- Há mudança fiscal relevante (input manual ou simulado)
+
+📥 6. ALIMENTAÇÃO DE DADOS NO SISTEMA
+
+Entrada de dados será feita exclusivamente por upload de arquivos pelo operador responsável.
+
+O sistema aceitará:
+- .CSV e .XLSX com colunas de ativos (nome, tipo, valor, quantidade, data, indexador etc.)
+- .PDF com OCR e NLP (notas de corretagem, extratos)
+- .JSON para portfólios estruturados
+
+Após o upload, o sistema:
+- Valida dados obrigatórios por tipo
+- Identifica automaticamente o tipo de ativo
+- Classifica conforme taxonomia interna
+
+Integrações para monitoramento de cotações:
+- Yahoo Finance API (ações, ETFs, FIIs)
+- CoinGecko ou CoinMarketCap (criptoativos)
+- Banco Central do Brasil (câmbio)
+- StatusInvest/FundsExplorer (fundos imobiliários)
+
+O sistema atualiza:
+- Valor de mercado diário dos ativos variáveis
+- Histórico de cotações
+- Comparativos com preço de entrada
+- Impacto no rebalanceamento da carteira
+
+📑 7. RELATÓRIOS ESTRATÉGICOS E FISCAIS
+
+Gerar relatórios PDF com:
+- Composição da carteira
+- Análise de risco por ativo e global
+- Comparação com perfil sugerido
+- Sugestões de rebalanceamento
+- Simulações de stress test
+- Resumo fiscal (ganhos, prejuízos, alíquotas aplicáveis)
+
+🧩 8. PERFIL DO USUÁRIO E SUITABILITY
+
+Usuário define perfil ao iniciar: conservador, moderado, arrojado
+
+Sistema deve:
+- Avaliar compatibilidade entre alocação e perfil
+- Gerar alertas de incompatibilidade
+- Adaptar sugestões de alocação
+
+🧠 9. REGRAS DE NEGÓCIO
+
+- Ações isentas até R$ 20 mil/mês
+- Criptoativos isentos até R$ 35 mil/mês
+- Dividendos de FIIs isentos se requisitos forem atendidos
+- Fundos com come-cotas calculados automaticamente
+- IR regressivo para renda fixa
+- Ativos no exterior com IR sobre ganho + câmbio
+
+🧪 10. SIMULADOR E RECOMENDAÇÕES
+
+Sistema sugere:
+- Rebalanceamento
+- Substituição de ativos com melhor risco-retorno
+- Proposta de alocação ideal conforme perfil
+
+Sugestões podem usar IA (GPT) apenas se solicitadas.

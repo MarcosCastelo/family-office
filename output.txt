@@ -1,0 +1,950 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-8.4.1, pluggy-1.6.0
+rootdir: /home/mcastelo/family-office
+configfile: pyproject.toml
+collected 71 items
+
+tests/assets/test_assets.py .                                            [  1%]
+tests/assets/test_assets_extra.py ........                               [ 12%]
+tests/auth/test_auth.py ..                                               [ 15%]
+tests/auth/test_auth_extra.py .........                                  [ 28%]
+tests/family/test_family.py .                                            [ 29%]
+tests/family/test_family_extra.py ...                                    [ 33%]
+tests/permissions/test_permission_constants.py .........                 [ 46%]
+tests/permissions/test_permission_decorators.py ......                   [ 54%]
+tests/permissions/test_permission_model.py .....                         [ 61%]
+tests/permissions/test_permission_routes.py FFFFFFFFFFFFF                [ 80%]
+tests/permissions/test_permission_schemas.py ..............              [100%]
+
+=================================== FAILURES ===================================
+______________ TestPermissionRoutes.test_list_permissions_success ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcecb0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_list_permissions_success(self, client, admin_user_fixture):
+        """Teste de listagem de permissões com sucesso"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar algumas permissões
+            perm1 = Permission(name="perm1", description="Permission 1")
+            perm2 = Permission(name="perm2", description="Permission 2")
+            db.session.add_all([perm1, perm2])
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Fazer requisição para listar permissões
+            response = client.get('/permissions', headers={
+                'Authorization': f'Bearer {token}'
+            })
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:35: AssertionError
+___________ TestPermissionRoutes.test_list_permissions_unauthorized ____________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fceec0>
+client = <FlaskClient <Flask 'app'>>, user_fixture = <User 1>
+
+    def test_list_permissions_unauthorized(self, client, user_fixture):
+        """Teste de listagem de permissões sem autorização"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como usuário normal
+            login_response = client.post('/auth/login', json={
+                'email': user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Tentar listar permissões
+            response = client.get('/permissions', headers={
+                'Authorization': f'Bearer {token}'
+            })
+    
+>           assert response.status_code == 403
+E           assert 422 == 403
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:59: AssertionError
+_______________ TestPermissionRoutes.test_get_permission_success _______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcf0d0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_get_permission_success(self, client, admin_user_fixture):
+        """Teste de obtenção de permissão específica"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissão
+            permission = Permission(name="test_perm", description="Test permission")
+            db.session.add(permission)
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Obter permissão específica
+            response = client.get(f'/permissions/{permission.id}', headers={
+                'Authorization': f'Bearer {token}'
+            })
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:84: AssertionError
+______________ TestPermissionRoutes.test_get_permission_not_found ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcf2e0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_get_permission_not_found(self, client, admin_user_fixture):
+        """Teste de obtenção de permissão inexistente"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Tentar obter permissão inexistente
+            response = client.get('/permissions/999', headers={
+                'Authorization': f'Bearer {token}'
+            })
+    
+>           assert response.status_code == 404
+E           assert 422 == 404
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:107: AssertionError
+_____________ TestPermissionRoutes.test_create_permission_success ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcf4f0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_create_permission_success(self, client, admin_user_fixture):
+        """Teste de criação de permissão"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Criar permissão
+            response = client.post('/permissions',
+                json={'name': 'new_perm', 'description': 'New permission'},
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 201
+E           assert 422 == 201
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:128: AssertionError
+__________ TestPermissionRoutes.test_create_permission_duplicate_name __________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcf430>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_create_permission_duplicate_name(self, client, admin_user_fixture):
+        """Teste de criação de permissão com nome duplicado"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissão existente
+            existing_perm = Permission(name="existing_perm")
+            db.session.add(existing_perm)
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Tentar criar permissão com mesmo nome
+            response = client.post('/permissions',
+                json={'name': 'existing_perm', 'description': 'Duplicate'},
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 400
+E           assert 422 == 400
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:157: AssertionError
+_____________ TestPermissionRoutes.test_update_permission_success ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcebc0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_update_permission_success(self, client, admin_user_fixture):
+        """Teste de atualização de permissão"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissão
+            permission = Permission(name="old_name", description="Old description")
+            db.session.add(permission)
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Atualizar permissão
+            response = client.put(f'/permissions/{permission.id}',
+                json={'name': 'new_name', 'description': 'New description'},
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:184: AssertionError
+_____________ TestPermissionRoutes.test_delete_permission_success ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcded0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_delete_permission_success(self, client, admin_user_fixture):
+        """Teste de exclusão de permissão"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissão
+            permission = Permission(name="to_delete")
+            db.session.add(permission)
+            db.session.commit()
+            permission_id = permission.id
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Deletar permissão
+            response = client.delete(f'/permissions/{permission_id}',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 204
+E           assert 422 == 204
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:213: AssertionError
+____________ TestPermissionRoutes.test_get_user_permissions_success ____________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcc7c0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+user_fixture = <User 2>
+
+    def test_get_user_permissions_success(self, client, admin_user_fixture, user_fixture):
+        """Teste de obtenção de permissões de usuário"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissões e atribuir ao usuário
+            perm1 = Permission(name="user_perm1")
+            perm2 = Permission(name="user_perm2")
+            db.session.add_all([perm1, perm2])
+            db.session.commit()
+    
+>           user_fixture.permissions.extend([perm1, perm2])
+
+tests/permissions/test_permission_routes.py:231: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/collections.py:1225: in extend
+    self.append(value)
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/collections.py:1138: in append
+    item = __set(self, item, _sa_initiator, NO_KEY)
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/collections.py:1103: in __set
+    item = executor.fire_append_event(item, _sa_initiator, key=key)
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/collections.py:695: in fire_append_event
+    return self.attr.fire_append_event(
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/attributes.py:1752: in fire_append_event
+    value = fn(state, value, initiator or self._append_token, key=key)
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/unitofwork.py:70: in append
+    sess._save_or_update_state(item_state)
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/session.py:3505: in _save_or_update_state
+    self._save_or_update_impl(state)
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/session.py:4195: in _save_or_update_impl
+    self._update_impl(state)
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/session.py:4178: in _update_impl
+    to_attach = self._before_attach(state, obj)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.orm.session.Session object at 0x7b3cb2a097e0>
+state = <sqlalchemy.orm.state.InstanceState object at 0x7b3cb47dece0>
+obj = <[DetachedInstanceError('Instance <Permission at 0x7b3cb2a088e0> is not bound to a Session; attribute refresh operation cannot proceed') raised in repr()] Permission object at 0x7b3cb2a088e0>
+
+    def _before_attach(self, state: InstanceState[Any], obj: object) -> bool:
+        self._autobegin_t()
+    
+        if state.session_id == self.hash_key:
+            return False
+    
+        if state.session_id and state.session_id in _sessions:
+>           raise sa_exc.InvalidRequestError(
+                "Object '%s' is already attached to session '%s' "
+                "(this is '%s')"
+                % (state_str(state), state.session_id, self.hash_key)
+            )
+E           sqlalchemy.exc.InvalidRequestError: Object '<Permission at 0x7b3cb2a088e0>' is already attached to session '52' (this is '51')
+
+../.cache/pypoetry/virtualenvs/family-office-EthLxko1-py3.10/lib/python3.10/site-packages/sqlalchemy/orm/session.py:4269: InvalidRequestError
+_____________ TestPermissionRoutes.test_assign_permissions_success _____________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcf850>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+user_fixture = <User 2>
+
+    def test_assign_permissions_success(self, client, admin_user_fixture, user_fixture):
+        """Teste de atribuição de permissões a usuário"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissões
+            perm1 = Permission(name="assign_perm1")
+            perm2 = Permission(name="assign_perm2")
+            db.session.add_all([perm1, perm2])
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Atribuir permissões
+            response = client.post('/users/permissions',
+                json={
+                    'user_id': user_fixture.id,
+                    'permission_ids': [perm1.id, perm2.id]
+                },
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:280: AssertionError
+_______________ TestPermissionRoutes.test_assign_profile_success _______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcfa90>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+user_fixture = <User 2>
+
+    def test_assign_profile_success(self, client, admin_user_fixture, user_fixture):
+        """Teste de atribuição de perfil a usuário"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissões do perfil manager (apenas as que não existem)
+            manager_permissions = PERMISSION_PROFILES['manager']
+            for perm_name in manager_permissions:
+                existing = Permission.query.filter_by(name=perm_name).first()
+                if not existing:
+                    perm = Permission(name=perm_name)
+                    db.session.add(perm)
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Atribuir perfil
+            response = client.post('/users/profile',
+                json={
+                    'user_id': user_fixture.id,
+                    'profile_name': 'manager'
+                },
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:320: AssertionError
+_________ TestPermissionRoutes.test_list_available_permissions_success _________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcfca0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_list_available_permissions_success(self, client, admin_user_fixture):
+        """Teste de listagem de permissões disponíveis"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Listar permissões disponíveis
+            response = client.get('/permissions/available',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:346: AssertionError
+___________ TestPermissionRoutes.test_initialize_permissions_success ___________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7b3cb2fcfeb0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_initialize_permissions_success(self, client, admin_user_fixture):
+        """Teste de inicialização de permissões"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Inicializar permissões
+            response = client.post('/permissions/initialize',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:371: AssertionError
+=========================== short test summary info ============================
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_list_permissions_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_list_permissions_unauthorized
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_get_permission_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_get_permission_not_found
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_create_permission_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_create_permission_duplicate_name
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_update_permission_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_delete_permission_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_get_user_permissions_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_assign_permissions_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_assign_profile_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_list_available_permissions_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_initialize_permissions_success
+======================== 13 failed, 58 passed in 10.24s ========================
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-8.4.1, pluggy-1.6.0
+rootdir: /home/mcastelo/family-office
+configfile: pyproject.toml
+collected 71 items
+
+tests/assets/test_assets.py .                                            [  1%]
+tests/assets/test_assets_extra.py ........                               [ 12%]
+tests/auth/test_auth.py ..                                               [ 15%]
+tests/auth/test_auth_extra.py .........                                  [ 28%]
+tests/family/test_family.py .                                            [ 29%]
+tests/family/test_family_extra.py ...                                    [ 33%]
+tests/permissions/test_permission_constants.py .........                 [ 46%]
+tests/permissions/test_permission_decorators.py ......                   [ 54%]
+tests/permissions/test_permission_model.py .....                         [ 61%]
+tests/permissions/test_permission_routes.py FFFFFFFFFFFFF                [ 80%]
+tests/permissions/test_permission_schemas.py ..............              [100%]
+
+=================================== FAILURES ===================================
+______________ TestPermissionRoutes.test_list_permissions_success ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d2ce0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_list_permissions_success(self, client, admin_user_fixture):
+        """Teste de listagem de permissões com sucesso"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar algumas permissões
+            perm1 = Permission(name="perm1", description="Permission 1")
+            perm2 = Permission(name="perm2", description="Permission 2")
+            db.session.add_all([perm1, perm2])
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Fazer requisição para listar permissões
+            response = client.get('/permissions', headers={
+                'Authorization': f'Bearer {token}'
+            })
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:35: AssertionError
+___________ TestPermissionRoutes.test_list_permissions_unauthorized ____________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d2ef0>
+client = <FlaskClient <Flask 'app'>>, user_fixture = <User 1>
+
+    def test_list_permissions_unauthorized(self, client, user_fixture):
+        """Teste de listagem de permissões sem autorização"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como usuário normal
+            login_response = client.post('/auth/login', json={
+                'email': user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Tentar listar permissões
+            response = client.get('/permissions', headers={
+                'Authorization': f'Bearer {token}'
+            })
+    
+>           assert response.status_code == 403
+E           assert 422 == 403
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:59: AssertionError
+_______________ TestPermissionRoutes.test_get_permission_success _______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d3100>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_get_permission_success(self, client, admin_user_fixture):
+        """Teste de obtenção de permissão específica"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissão
+            permission = Permission(name="test_perm", description="Test permission")
+            db.session.add(permission)
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Obter permissão específica
+            response = client.get(f'/permissions/{permission.id}', headers={
+                'Authorization': f'Bearer {token}'
+            })
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:84: AssertionError
+______________ TestPermissionRoutes.test_get_permission_not_found ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d3310>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_get_permission_not_found(self, client, admin_user_fixture):
+        """Teste de obtenção de permissão inexistente"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Tentar obter permissão inexistente
+            response = client.get('/permissions/999', headers={
+                'Authorization': f'Bearer {token}'
+            })
+    
+>           assert response.status_code == 404
+E           assert 422 == 404
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:107: AssertionError
+_____________ TestPermissionRoutes.test_create_permission_success ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d3520>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_create_permission_success(self, client, admin_user_fixture):
+        """Teste de criação de permissão"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Criar permissão
+            response = client.post('/permissions',
+                json={'name': 'new_perm', 'description': 'New permission'},
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 201
+E           assert 422 == 201
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:128: AssertionError
+__________ TestPermissionRoutes.test_create_permission_duplicate_name __________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d3460>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_create_permission_duplicate_name(self, client, admin_user_fixture):
+        """Teste de criação de permissão com nome duplicado"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissão existente
+            existing_perm = Permission(name="existing_perm")
+            db.session.add(existing_perm)
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Tentar criar permissão com mesmo nome
+            response = client.post('/permissions',
+                json={'name': 'existing_perm', 'description': 'Duplicate'},
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 400
+E           assert 422 == 400
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:157: AssertionError
+_____________ TestPermissionRoutes.test_update_permission_success ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d2bf0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_update_permission_success(self, client, admin_user_fixture):
+        """Teste de atualização de permissão"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissão
+            permission = Permission(name="old_name", description="Old description")
+            db.session.add(permission)
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Atualizar permissão
+            response = client.put(f'/permissions/{permission.id}',
+                json={'name': 'new_name', 'description': 'New description'},
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:184: AssertionError
+_____________ TestPermissionRoutes.test_delete_permission_success ______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d1f00>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_delete_permission_success(self, client, admin_user_fixture):
+        """Teste de exclusão de permissão"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissão
+            permission = Permission(name="to_delete")
+            db.session.add(permission)
+            db.session.commit()
+            permission_id = permission.id
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Deletar permissão
+            response = client.delete(f'/permissions/{permission_id}',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 204
+E           assert 422 == 204
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:213: AssertionError
+____________ TestPermissionRoutes.test_get_user_permissions_success ____________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d07f0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+user_fixture = <User 2>
+
+    def test_get_user_permissions_success(self, client, admin_user_fixture, user_fixture):
+        """Teste de obtenção de permissões de usuário"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissões e atribuir ao usuário
+            perm1 = Permission(name="user_perm1")
+            perm2 = Permission(name="user_perm2")
+            db.session.add_all([perm1, perm2])
+            db.session.commit()
+    
+            user = db.session.get(User, user_fixture.id)
+            user.permissions.extend([perm1, perm2])
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Obter permissões do usuário
+            response = client.get(f'/users/{user_fixture.id}/permissions',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:247: AssertionError
+_____________ TestPermissionRoutes.test_assign_permissions_success _____________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d3880>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+user_fixture = <User 2>
+
+    def test_assign_permissions_success(self, client, admin_user_fixture, user_fixture):
+        """Teste de atribuição de permissões a usuário"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissões
+            perm1 = Permission(name="assign_perm1")
+            perm2 = Permission(name="assign_perm2")
+            db.session.add_all([perm1, perm2])
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Atribuir permissões
+            response = client.post('/users/permissions',
+                json={
+                    'user_id': user_fixture.id,
+                    'permission_ids': [perm1.id, perm2.id]
+                },
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:281: AssertionError
+_______________ TestPermissionRoutes.test_assign_profile_success _______________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d3ac0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+user_fixture = <User 2>
+
+    def test_assign_profile_success(self, client, admin_user_fixture, user_fixture):
+        """Teste de atribuição de perfil a usuário"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Criar permissões do perfil manager (apenas as que não existem)
+            manager_permissions = PERMISSION_PROFILES['manager']
+            for perm_name in manager_permissions:
+                existing = Permission.query.filter_by(name=perm_name).first()
+                if not existing:
+                    perm = Permission(name=perm_name)
+                    db.session.add(perm)
+            db.session.commit()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Atribuir perfil
+            response = client.post('/users/profile',
+                json={
+                    'user_id': user_fixture.id,
+                    'profile_name': 'manager'
+                },
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:322: AssertionError
+_________ TestPermissionRoutes.test_list_available_permissions_success _________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d3cd0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_list_available_permissions_success(self, client, admin_user_fixture):
+        """Teste de listagem de permissões disponíveis"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Listar permissões disponíveis
+            response = client.get('/permissions/available',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:349: AssertionError
+___________ TestPermissionRoutes.test_initialize_permissions_success ___________
+
+self = <tests.permissions.test_permission_routes.TestPermissionRoutes object at 0x7df1b65d3ee0>
+client = <FlaskClient <Flask 'app'>>, admin_user_fixture = <User 1>
+
+    def test_initialize_permissions_success(self, client, admin_user_fixture):
+        """Teste de inicialização de permissões"""
+        with client.application.app_context():
+            # Limpar sessão para evitar conflitos
+            db.session.rollback()
+    
+            # Fazer login como admin
+            login_response = client.post('/auth/login', json={
+                'email': admin_user_fixture.email,
+                'password': 'password123'
+            })
+            token = login_response.json['access_token']
+    
+            # Inicializar permissões
+            response = client.post('/permissions/initialize',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+    
+>           assert response.status_code == 200
+E           assert 422 == 200
+E            +  where 422 = <WrapperTestResponse streamed [422 UNPROCESSABLE ENTITY]>.status_code
+
+tests/permissions/test_permission_routes.py:374: AssertionError
+=========================== short test summary info ============================
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_list_permissions_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_list_permissions_unauthorized
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_get_permission_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_get_permission_not_found
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_create_permission_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_create_permission_duplicate_name
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_update_permission_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_delete_permission_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_get_user_permissions_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_assign_permissions_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_assign_profile_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_list_available_permissions_success
+FAILED tests/permissions/test_permission_routes.py::TestPermissionRoutes::test_initialize_permissions_success
+======================== 13 failed, 58 passed in 9.73s =========================
