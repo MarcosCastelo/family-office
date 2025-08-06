@@ -21,7 +21,8 @@ dependencies = [
     "pdfminer-six (>=20250506,<20250507)",
     "flask-migrate (>=4.1.0,<5.0.0)",
     "marshmallow (>=4.0.0,<5.0.0)",
-    "marshmallow-sqlalchemy (>=1.4.2,<2.0.0)"
+    "marshmallow-sqlalchemy (>=1.4.2,<2.0.0)",
+    "requests (>=2.32.4,<3.0.0)"
 ]
 
 [tool.poetry]
@@ -31,6 +32,7 @@ packages = [{include = "family_office", from = "src"}]
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
 coverage = "^7.9.1"
+openpyxl = "^3.1.5"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

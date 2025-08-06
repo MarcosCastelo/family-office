@@ -1,0 +1,7 @@
+/* Reset para uso do MUI */
+body {
+  margin: 0;
+  font-family: Roboto, Arial, sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #7b6cf6 0%, #5f9df7 100%);
+}

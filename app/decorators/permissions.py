@@ -14,24 +14,21 @@ def require_permissions(*permission_names):
         def wrapper(*args, **kwargs):
             # Verificar JWT primeiro
             verify_jwt_in_request()
-            
             user_id = get_jwt_identity()
             user = db.session.get(User, user_id)
-            
             if not user:
                 return jsonify({"error": "Usuário não encontrado"}), 401
-            
             user_permissions = [p.name for p in user.permissions]
-            
             # Verificar se o usuário tem pelo menos uma das permissões
             if not any(perm in user_permissions for perm in permission_names):
                 return jsonify({
                     "error": f"Permissão negada. Necessário: {', '.join(permission_names)}"
                 }), 403
-            
             return f(*args, **kwargs)
         return wrapper
     return decorator
+
+require_permission = require_permissions
 
 def require_all_permissions(*permission_names):
     """

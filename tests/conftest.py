@@ -54,23 +54,25 @@ def user_fixture(db):
 
 @pytest.fixture()
 def admin_user_fixture(db):
-    """Create admin user with all permissions"""
+    """Create admin user with all permissions, including 'admin'"""
     user = User(email="admin@example.com")
     user.set_password("password123")
     db.session.add(user)
     db.session.commit()
-    
     # Criar todas as permissões e atribuir ao admin
+    from app.models.permission import Permission
+    from app.constants.permissions import ALL_PERMISSIONS
     for permission_name in ALL_PERMISSIONS:
         permission = Permission(name=permission_name)
         db.session.add(permission)
+    # Garante permissão 'admin' explícita
+    if not Permission.query.filter_by(name="admin").first():
+        db.session.add(Permission(name="admin"))
     db.session.commit()
-    
     # Atribuir todas as permissões ao usuário admin
     all_permissions = Permission.query.all()
     user.permissions.extend(all_permissions)
     db.session.commit()
-    
     return user
 
 @pytest.fixture()

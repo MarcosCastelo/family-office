@@ -27,4 +27,40 @@ def test_login_nonexistent_user(client):
 
 def test_login_missing_fields(client):
     response = client.post("/auth/login", json={"email": "user6@example.com"})
-    assert response.status_code in [400, 422, 500] 
+    assert response.status_code in [400, 422, 500]
+
+def test_register_weak_password(client):
+    response = client.post("/auth/register", json={"email": "user7@example.com", "password": "123"})
+    assert response.status_code in [400, 422, 500]
+
+def test_register_invalid_email_format(client):
+    response = client.post("/auth/register", json={"email": "invalido", "password": "senha123"})
+    assert response.status_code in [400, 422, 500]
+
+def test_refresh_invalid_token(client):
+    response = client.post("/auth/refresh", headers={"Authorization": "Bearer token_invalido"})
+    assert response.status_code in [401, 422]
+
+def test_refresh_token_flow(client):
+    # Cadastro e login
+    client.post("/auth/register", json={"email": "user8@example.com", "password": "senha123"})
+    login = client.post("/auth/login", json={"email": "user8@example.com", "password": "senha123"})
+    refresh_token = login.get_json().get("refresh_token")
+    assert refresh_token
+    # Refresh
+    response = client.post("/auth/refresh", headers={"Authorization": f"Bearer {refresh_token}"})
+    assert response.status_code == 200
+    assert "access_token" in response.get_json()
+
+def test_access_family_not_linked(client, db, user, family):
+    # Cria nova família sem vínculo
+    from app.models.family import Family
+    outra_familia = Family(name="Outra Familia")
+    db.session.add(outra_familia)
+    db.session.commit()
+    from flask_jwt_extended import create_access_token
+    token = create_access_token(identity=str(user.id))
+    headers = {"Authorization": f"Bearer {token}"}
+    # Tenta acessar ativos da família não vinculada
+    response = client.get(f"/assets?family_id={outra_familia.id}", headers=headers)
+    assert response.status_code == 403 

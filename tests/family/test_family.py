@@ -6,7 +6,7 @@ def test_join_family(client, db, access_token):
     db.session.add(family)
     db.session.commit()
     response = client.post(
-        f"/family/join/{family.id}",
+        f"/families/join/{family.id}",
         headers={
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"

@@ -34,3 +34,21 @@ def update_asset(asset_id):
 @jwt_required()
 def delete_asset(asset_id):
     return delete_asset_controller(asset_id)
+
+@asset_bp.route("/upload", methods=["POST"])
+@jwt_required()
+def upload_assets():
+    from app.controllers.asset_controller import upload_assets_controller
+    return upload_assets_controller(request)
+
+@asset_bp.route("/upload-pdf", methods=["POST"])
+@jwt_required()
+def upload_pdf_assets():
+    from app.controllers.asset_controller import upload_pdf_assets_controller
+    return upload_pdf_assets_controller(request)
+
+@asset_bp.route("/<int:asset_id>/risk", methods=["GET"])
+@jwt_required()
+def get_asset_risk(asset_id):
+    from app.controllers.asset_controller import get_asset_risk_controller
+    return get_asset_risk_controller(asset_id)
