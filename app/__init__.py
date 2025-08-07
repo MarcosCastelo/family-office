@@ -22,4 +22,8 @@ def create_app():
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(admin_bp)
     
+    # Register health check blueprint
+    from app.routes.health import health_bp
+    app.register_blueprint(health_bp)
+    
     return app

@@ -71,10 +71,14 @@ Este documento detalha o roadmap, milestones e backlog do projeto Family Office 
 - Cobertura Pytest
 - Documentação Markdown e Swagger (Flask-RESTX)
 
-### 10. Deploy & Integração Frontend
-- **Status:** Pendente
-- Deploy (Render.com/VPS)
-- Integração e testes com frontend
+### 10. Deploy & Integração Frontend ✅ **CONCLUÍDO**
+- **Status:** Concluído
+- Configuração Docker completa (backend, frontend, database)
+- Docker Compose para desenvolvimento local
+- Configuração Railway para deploy em produção
+- Health checks e monitoramento
+- Documentação Docker completa
+- Deploy automatizado no Railway
 
 ### 11. Melhorias de UI/UX ✅ **CONCLUÍDO**
 - **Status:** Concluído
