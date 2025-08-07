@@ -27,6 +27,7 @@ class PermissionType:
     REPORT_EXPORT = "report_export"
     
     # Permissões administrativas
+    ADMIN = "admin"
     ADMIN_USERS = "admin_users"
     ADMIN_PERMISSIONS = "admin_permissions"
     ADMIN_SYSTEM = "admin_system"
@@ -50,6 +51,7 @@ ALL_PERMISSIONS = [
     PermissionType.REPORT_VIEW,
     PermissionType.REPORT_GENERATE,
     PermissionType.REPORT_EXPORT,
+    PermissionType.ADMIN,
     PermissionType.ADMIN_USERS,
     PermissionType.ADMIN_PERMISSIONS,
     PermissionType.ADMIN_SYSTEM,

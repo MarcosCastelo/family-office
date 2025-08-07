@@ -21,25 +21,48 @@ def dashboard_controller(req):
     user = db.session.get(User, user_id)
     if not user or not any(f.id == family_id for f in user.families):
         return jsonify({"error": "Acesso à família negado"}), 403
-    # Agregação de dados
+    # Agregação de dados baseada no novo sistema de patrimônio
     ativos = Asset.query.filter_by(family_id=family_id).all()
-    valor_total = sum(a.value for a in ativos)
+    
+    # Patrimônio investido (soma dos valores atuais dos ativos)
+    patrimonio_investido = family.total_invested
+    
+    # Patrimônio não investido (saldo disponível)
+    patrimonio_nao_investido = family.cash_balance
+    
+    # Patrimônio total
+    patrimonio_total = family.total_patrimony
+    
     num_ativos = len(ativos)
-    # Distribuição por classe
-    dist = {}
-    for a in ativos:
-        dist[a.asset_type] = dist.get(a.asset_type, 0) + a.value
-    distribuicao_classes = [{"classe": k, "valor": v} for k, v in dist.items()]
-    # Top 5 ativos
-    top_ativos = sorted(ativos, key=lambda x: x.value, reverse=True)[:5]
-    top_ativos = [{"id": a.id, "name": a.name, "value": a.value, "asset_type": a.asset_type} for a in top_ativos]
+    
+    # Distribuição por classe baseada no valor atual dos ativos
+    distribuicao_classes = []
+    for asset_type, value in family.asset_allocation.items():
+        distribuicao_classes.append({"classe": asset_type, "valor": value})
+    
+    # Top 5 ativos por valor atual
+    top_ativos = sorted(ativos, key=lambda x: x.current_value, reverse=True)[:5]
+    top_ativos = [
+        {
+            "id": a.id, 
+            "name": a.name, 
+            "value": a.current_value, 
+            "asset_type": a.asset_type,
+            "quantity": a.current_quantity,
+            "average_cost": a.average_cost
+        } 
+        for a in top_ativos
+    ]
     # Alertas recentes
     alertas = Alert.query.filter_by(family_id=family_id).order_by(Alert.criado_em.desc()).limit(5).all()
     alertas_recentes = [{"tipo": a.tipo, "mensagem": a.mensagem, "severidade": a.severidade, "criado_em": a.criado_em.isoformat()} for a in alertas]
     # Score de risco (mock)
     score_risco = {"score_global": 23, "classificacao_final": "médio"}
     return jsonify({
-        "valor_total": valor_total,
+        "patrimonio_total": patrimonio_total,
+        "patrimonio_investido": patrimonio_investido,
+        "patrimonio_nao_investido": patrimonio_nao_investido,
+        "percentual_investido": round((patrimonio_investido / patrimonio_total * 100) if patrimonio_total > 0 else 0, 2),
         "num_ativos": num_ativos,
         "distribuicao_classes": distribuicao_classes,
         "top_ativos": top_ativos,

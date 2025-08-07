@@ -76,6 +76,23 @@ Este documento detalha o roadmap, milestones e backlog do projeto Family Office 
 - Deploy (Render.com/VPS)
 - Integração e testes com frontend
 
+### 11. Melhorias de UI/UX ✅ **CONCLUÍDO**
+- **Status:** Concluído
+- Integração do menu de navegação ao header
+- Melhoria da hierarquia visual e usabilidade
+- Ajustes de responsividade e acessibilidade
+- Modal de transações com comportamento padrão (createPortal)
+- Dashboard refatorado com novo retorno da API
+- Gestão de sessão melhorada com interceptors do Axios
+
+### 12. Gestão de Sessão e Autenticação ✅ **CONCLUÍDO**
+- **Status:** Concluído
+- Interceptors do Axios para refresh automático de tokens
+- Redirecionamento automático para login quando token expira
+- Melhor tratamento de erros 401
+- Logout automático em caso de refresh token inválido
+- Limpeza automática do localStorage
+
 ---
 
 ## 🖥️ Roadmap Frontend — Dashboard Family Office
@@ -98,35 +115,64 @@ O frontend será um dashboard web responsivo, moderno, com navegação lateral, 
 
 1. **Setup Inicial**
    - Escolha do framework (React + TypeScript recomendado)
-   - Estruturação do projeto (src, pages, components, hooks, services)
-   - Configuração de rotas, tema e integração inicial com API
+   - Configuração Vite, ESLint, Prettier
+   - Estrutura de pastas e componentes base
 
-2. **Autenticação e Controle de Sessão**
-   - Tela de login/cadastro, fluxo de refresh token, rotas protegidas
+2. **Sistema de Autenticação**
+   - Tela de login responsiva
+   - Context API para gerenciamento de estado
+   - Proteção de rotas
+   - Persistência de tokens
 
-3. **Layout e Navegação**
-   - Sidebar, header, responsividade, menu dinâmico, breadcrumbs
+3. **Layout e Navegação** ✅ **MELHORADO**
+   - Header integrado com menu de navegação
+   - Seletor de família no header
+   - Informações de usuário e logout
+   - Navegação por tabs integrada ao header
+   - Design responsivo e moderno
 
-4. **Dashboard Consolidado**
-   - Consumo do endpoint /dashboard, cards de resumo, gráficos, alertas
+4. **Dashboard Principal**
+   - Cards com métricas principais
+   - Gráficos de distribuição de ativos
+   - Lista de alertas recentes
+   - Score de risco consolidado
+   - Transações recentes
 
-5. **Gestão de Famílias**
-   - Listagem, detalhes, associação, CRUD (admin)
+5. **Gestão de Ativos**
+   - Lista de ativos com filtros
+   - Formulário de cadastro/edição
+   - Upload de arquivos (CSV/XLSX/PDF)
+   - Integração com transações
 
-6. **Gestão de Ativos**
-   - Listagem, cadastro/edição, visualização detalhada, exclusão, uploads
+6. **Sistema de Transações**
+   - Lista de transações por ativo
+   - Formulário de nova transação
+   - Resumo financeiro (P&L)
+   - Navegação bidirecional com ativos
 
 7. **Análise de Risco**
-   - Score consolidado/individual, gráficos, alertas visuais
+   - Score de risco consolidado
+   - Análise individual por ativo
+   - Recálculo manual de risco
+   - Visualização por família
 
-8. **Alertas**
-   - Listagem, visualização, ações, gatilho manual
+8. **Upload e Importação**
+   - Interface de upload de arquivos
+   - Templates para download
+   - Histórico de uploads
+   - Feedback visual de progresso
 
-9. **Administração**
-   - CRUD de usuários/famílias, vinculação, permissões
+9. **Perfil e Configurações**
+   - Informações do usuário
+   - Alteração de senha
+   - Lista de permissões
+   - Dados de suitability
 
-10. **Perfil e Suitability**
-    - Tela de perfil, cadastro/edição de suitability, compatibilidade
+10. **Painel Administrativo**
+    - Gestão de usuários
+    - Gestão de famílias
+    - Configurações do sistema
+    - Logs e auditoria
 
 11. **Relatórios e Exportações**
     - Geração/download de relatórios PDF, exportação CSV/PDF
@@ -219,6 +265,23 @@ graph TD
   - Automatizar deploy em Render.com ou VPS (Docker/Gunicorn/Nginx).
 - **H2. Integração Frontend:**
   - Testar e validar integração com frontend (Swagger/Postman).
+
+### [I] Melhorias de UI/UX ✅ **NOVO**
+- **I1. Integração Menu-Header:**
+  - Mover menu de navegação para dentro do header
+  - Melhorar hierarquia visual e usabilidade
+  - Ajustar estilos para consistência visual
+- **I2. Responsividade:**
+  - Implementar design responsivo para mobile
+  - Ajustar breakpoints e layouts
+- **I3. Acessibilidade:**
+  - Adicionar atributos ARIA
+  - Melhorar navegação por teclado
+  - Implementar contraste adequado
+- **I4. Performance:**
+  - Otimizar carregamento de componentes
+  - Implementar lazy loading
+  - Melhorar cache de dados
 
 ---
 

@@ -49,6 +49,23 @@ def create_transaction_controller(req):
         # Create transaction
         transaction = Transaction(**validated_data)
         db.session.add(transaction)
+        
+        # Update family cash balance based on transaction type
+        family = asset.family
+        transaction_value = transaction.total_value
+        
+        if validated_data['transaction_type'] == 'buy':
+            # Deduct from available cash when buying
+            if family.cash_balance < transaction_value:
+                db.session.rollback()
+                return jsonify({
+                    "error": f"Saldo insuficiente. Disponível: R$ {family.cash_balance:.2f}, Necessário: R$ {transaction_value:.2f}"
+                }), 400
+            family.cash_balance -= transaction_value
+        elif validated_data['transaction_type'] == 'sell':
+            # Add to cash when selling
+            family.cash_balance += transaction_value
+        
         db.session.commit()
         
         # Manually serialize to avoid issues with @post_load removal
@@ -302,15 +319,27 @@ def get_asset_transaction_summary_controller(asset_id):
         buy_transactions = asset.get_transactions_by_type('buy')
         sell_transactions = asset.get_transactions_by_type('sell')
         
+        # Calculate additional metrics
+        current_value = asset.current_quantity * asset.current_price if hasattr(asset, 'current_price') and asset.current_price else 0
+        realized_gain_loss = asset.total_divested - (asset.average_cost * sum(t.quantity for t in sell_transactions)) if sell_transactions else 0
+        unrealized_gain_loss = current_value - (asset.current_quantity * asset.average_cost) if asset.current_quantity > 0 else 0
+
         summary = {
+            # Novos campos (esperados pelo frontend atual)
+            'current_quantity': asset.current_quantity or 0,
+            'current_value': current_value,
+            'average_cost': asset.average_cost or 0,
+            'total_invested': asset.total_invested or 0,
+            'total_divested': asset.total_divested or 0,
+            'realized_gain_loss': realized_gain_loss,
+            'unrealized_gain_loss': unrealized_gain_loss,
+            'transaction_count': len(asset.transactions),
+            
+            # Campos antigos (para compatibilidade)
             'total_transactions': len(asset.transactions),
             'total_buy_transactions': len(buy_transactions),
             'total_sell_transactions': len(sell_transactions),
-            'total_invested': asset.total_invested,
-            'total_divested': asset.total_divested,
             'net_investment': asset.total_invested - asset.total_divested,
-            'current_quantity': asset.current_quantity,
-            'average_cost': asset.average_cost,
             'latest_transaction_date': asset.get_latest_transaction().transaction_date if asset.get_latest_transaction() else None
         }
         

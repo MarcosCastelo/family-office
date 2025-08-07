@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { login as apiLogin } from '../services/auth';
+import { login as apiLogin, logout as apiLogout, setupAxiosInterceptors } from '../services/auth';
 
 interface User {
   id: number;
@@ -15,6 +15,7 @@ interface AuthContextType {
   logout: () => void;
   loading: boolean;
   error: string;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +27,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Função para lidar com token expirado
+  const handleTokenExpired = () => {
+    console.log('Token expirado, limpando sessão...');
+    setAccessToken(null);
+    setRefreshToken(null);
+    setUser(null);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    
+    // Forçar reload da página para ir para login
+    window.location.href = '/';
+  };
+
+  // Configurar interceptors do axios
+  useEffect(() => {
+    setupAxiosInterceptors(handleTokenExpired);
+  }, []);
+
+  // Carregar dados da sessão do localStorage
   useEffect(() => {
     const storedAccess = localStorage.getItem('access_token');
     const storedRefresh = localStorage.getItem('refresh_token');
@@ -38,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRefreshToken(storedRefresh);
         setUser(parsedUser);
       } catch (error) {
+        console.error('Erro ao parsear dados do usuário:', error);
         // Se o JSON for inválido, limpa o localStorage
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
@@ -51,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError('');
     try {
       const data = await apiLogin(email, password);
-      console.log('Resposta da API:', data); // Debug
+      console.log('Resposta da API:', data);
       
       setAccessToken(data.access_token);
       setRefreshToken(data.refresh_token);
@@ -65,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Se a API retorna apenas user_id, criar objeto user
         userData = {
           id: data.user_id,
-          email: email // Usar o email do formulário
+          email: email
         };
       } else {
         throw new Error('Estrutura de resposta da API inválida');
@@ -76,9 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('refresh_token', data.refresh_token);
       localStorage.setItem('user', JSON.stringify(userData));
       
-      console.log('Usuário definido:', userData); // Debug
+      console.log('Usuário definido:', userData);
     } catch (err: any) {
-      console.error('Erro no login:', err); // Debug
+      console.error('Erro no login:', err);
       setError(err.response?.data?.message || 'Erro ao fazer login');
       throw err;
     } finally {
@@ -86,17 +108,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    setAccessToken(null);
-    setRefreshToken(null);
-    setUser(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      // Tentar fazer logout no servidor
+      await apiLogout();
+    } catch (error) {
+      console.log('Erro no logout do servidor (pode ser normal):', error);
+    } finally {
+      // Sempre limpar dados locais
+      setAccessToken(null);
+      setRefreshToken(null);
+      setUser(null);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      
+      // Redirecionar para login
+      window.location.href = '/';
+    }
   };
 
+  const isAuthenticated = !!user && !!accessToken;
+
   return (
-    <AuthContext.Provider value={{ user, accessToken, refreshToken, login, logout, loading, error }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      accessToken, 
+      refreshToken, 
+      login, 
+      logout, 
+      loading, 
+      error,
+      isAuthenticated 
+    }}>
       {children}
     </AuthContext.Provider>
   );

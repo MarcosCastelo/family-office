@@ -95,7 +95,9 @@ export default function RiskAnalysis() {
     }
   };
 
-  const getRiskColor = (classification: string) => {
+  const getRiskColor = (classification: string | undefined) => {
+    if (!classification) return '#666';
+    
     switch (classification.toLowerCase()) {
       case 'crítico':
         return '#d32f2f';
@@ -110,7 +112,9 @@ export default function RiskAnalysis() {
     }
   };
 
-  const getRiskLabel = (classification: string) => {
+  const getRiskLabel = (classification: string | undefined) => {
+    if (!classification) return 'Indefinido';
+    
     switch (classification.toLowerCase()) {
       case 'crítico':
         return 'Crítico';

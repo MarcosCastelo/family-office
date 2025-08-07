@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -8,7 +7,7 @@ import {
   BarChart3,
   Percent
 } from 'lucide-react';
-import { TransactionSummary as TSummary } from '../services/transactions';
+import { type TransactionSummary as TSummary } from '../services/transactions';
 
 interface TransactionSummaryProps {
   summary: TSummary;
@@ -63,62 +62,103 @@ export default function TransactionSummary({ summary, assetName, loading }: Tran
     );
   }
 
+  // Criar um objeto com valores padrão para evitar erros de undefined
+  const safeSummary = {
+    // Novos campos (principais)
+    current_quantity: summary.current_quantity || 0,
+    current_value: summary.current_value || 0,
+    average_cost: summary.average_cost || 0,
+    total_invested: summary.total_invested || 0,
+    total_divested: summary.total_divested || 0,
+    realized_gain_loss: summary.realized_gain_loss || 0,
+    unrealized_gain_loss: summary.unrealized_gain_loss || 0,
+    transaction_count: summary.transaction_count || 0,
+    
+    // Campos antigos (para compatibilidade)
+    total_transactions: summary.total_transactions || 0,
+    total_buy_transactions: summary.total_buy_transactions || 0,
+    total_sell_transactions: summary.total_sell_transactions || 0,
+    net_investment: summary.net_investment || 0,
+    latest_transaction_date: summary.latest_transaction_date || null
+  };
+
   const metrics = [
     {
       label: 'Quantidade Atual',
-      value: formatNumber(summary.current_quantity, 6),
+      value: formatNumber(safeSummary.current_quantity, 6),
       icon: <BarChart3 size={20} />,
       color: '#667eea',
       background: '#f0f4ff'
     },
     {
       label: 'Valor Atual',
-      value: formatCurrency(summary.current_value),
+      value: formatCurrency(safeSummary.current_value),
       icon: <DollarSign size={20} />,
       color: '#667eea',
       background: '#f0f4ff'
     },
     {
       label: 'Custo Médio',
-      value: formatCurrency(summary.average_cost),
+      value: formatCurrency(safeSummary.average_cost),
       icon: <Target size={20} />,
       color: '#8b5cf6',
       background: '#faf5ff'
     },
     {
       label: 'Total Investido',
-      value: formatCurrency(summary.total_invested),
+      value: formatCurrency(safeSummary.total_invested),
       icon: <TrendingUp size={20} />,
       color: '#22c55e',
       background: '#f0fdf4'
     },
     {
       label: 'Total Desinvestido',
-      value: formatCurrency(summary.total_divested),
+      value: formatCurrency(safeSummary.total_divested),
       icon: <TrendingDown size={20} />,
       color: '#f59e0b',
       background: '#fffbeb'
     },
     {
       label: 'Ganho/Perda Realizado',
-      value: formatCurrency(summary.realized_gain_loss),
-      icon: getGainLossIcon(summary.realized_gain_loss),
-      color: getGainLossColor(summary.realized_gain_loss),
-      background: summary.realized_gain_loss > 0 ? '#f0fdf4' : summary.realized_gain_loss < 0 ? '#fef2f2' : '#f8fafc'
+      value: formatCurrency(safeSummary.realized_gain_loss),
+      icon: getGainLossIcon(safeSummary.realized_gain_loss),
+      color: getGainLossColor(safeSummary.realized_gain_loss),
+      background: safeSummary.realized_gain_loss > 0 ? '#f0fdf4' : safeSummary.realized_gain_loss < 0 ? '#fef2f2' : '#f8fafc'
     },
     {
       label: 'Ganho/Perda Não Realizado',
-      value: formatCurrency(summary.unrealized_gain_loss),
-      icon: getGainLossIcon(summary.unrealized_gain_loss),
-      color: getGainLossColor(summary.unrealized_gain_loss),
-      background: summary.unrealized_gain_loss > 0 ? '#f0fdf4' : summary.unrealized_gain_loss < 0 ? '#fef2f2' : '#f8fafc'
+      value: formatCurrency(safeSummary.unrealized_gain_loss),
+      icon: getGainLossIcon(safeSummary.unrealized_gain_loss),
+      color: getGainLossColor(safeSummary.unrealized_gain_loss),
+      background: safeSummary.unrealized_gain_loss > 0 ? '#f0fdf4' : safeSummary.unrealized_gain_loss < 0 ? '#fef2f2' : '#f8fafc'
     },
     {
       label: 'Total de Transações',
-      value: summary.transaction_count.toString(),
+      value: safeSummary.transaction_count.toString(),
       icon: <Activity size={20} />,
       color: '#64748b',
       background: '#f8fafc'
+    },
+    {
+      label: 'Transações de Compra',
+      value: safeSummary.total_buy_transactions.toString(),
+      icon: <TrendingUp size={20} />,
+      color: '#22c55e',
+      background: '#f0fdf4'
+    },
+    {
+      label: 'Transações de Venda',
+      value: safeSummary.total_sell_transactions.toString(),
+      icon: <TrendingDown size={20} />,
+      color: '#ef4444',
+      background: '#fef2f2'
+    },
+    {
+      label: 'Investimento Líquido',
+      value: formatCurrency(safeSummary.net_investment),
+      icon: getGainLossIcon(safeSummary.net_investment),
+      color: getGainLossColor(safeSummary.net_investment),
+      background: safeSummary.net_investment > 0 ? '#f0fdf4' : safeSummary.net_investment < 0 ? '#fef2f2' : '#f8fafc'
     }
   ];
 

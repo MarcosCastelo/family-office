@@ -13,7 +13,7 @@ import {
   Activity,
   Users
 } from 'lucide-react';
-import { getAssets, createAsset, updateAsset, deleteAsset, Asset } from '../services/assets';
+import { getAssets, createAsset, updateAsset, deleteAsset, type Asset } from '../services/assets';
 import { useFamily } from '../contexts/FamilyContext';
 
 // Asset interface now imported from services

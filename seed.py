@@ -68,7 +68,7 @@ def seed_families_and_users():
     families = []
     users = []
     for i in range(1, 4):
-        fam, _ = get_or_create(Family, name=f"Família Exemplo {i}")
+        fam, _ = get_or_create(Family, name=f"Família Exemplo {i}", defaults={"cash_balance": 50000.0})
         families.append(fam)
     # Usuários comuns
     for i in range(1, 4):

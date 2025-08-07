@@ -4,28 +4,28 @@ import { useAuth } from '../hooks/useAuth';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, user, loading, error } = useAuth();
+  const { login, isAuthenticated, loading, error } = useAuth();
   const [localError, setLocalError] = useState('');
 
   useEffect(() => {
-    console.log('Login useEffect - user mudou:', user); // Debug
-    if (user) {
-      console.log('Usuário autenticado, redirecionando...'); // Debug
+    console.log('Login useEffect - isAuthenticated mudou:', isAuthenticated);
+    if (isAuthenticated) {
+      console.log('Usuário autenticado, redirecionando...');
       // Redireciona para dashboard após login bem-sucedido
       window.location.reload();
     }
-  }, [user]);
+  }, [isAuthenticated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
-    console.log('Iniciando login...'); // Debug
+    console.log('Iniciando login...');
     try {
       await login(email, password);
-      console.log('Login bem-sucedido, aguardando redirecionamento...'); // Debug
-      // O redirecionamento será feito pelo useEffect quando user for atualizado
+      console.log('Login bem-sucedido, aguardando redirecionamento...');
+      // O redirecionamento será feito pelo useEffect quando isAuthenticated for atualizado
     } catch (err) {
-      console.error('Erro no login:', err); // Debug
+      console.error('Erro no login:', err);
       setLocalError('Erro ao fazer login');
     }
   };

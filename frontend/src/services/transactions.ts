@@ -16,6 +16,7 @@ export interface Transaction {
 }
 
 export interface TransactionSummary {
+  // Novos campos (principais)
   current_quantity: number;
   current_value: number;
   average_cost: number;
@@ -24,6 +25,13 @@ export interface TransactionSummary {
   realized_gain_loss: number;
   unrealized_gain_loss: number;
   transaction_count: number;
+  
+  // Campos antigos (para compatibilidade)
+  total_transactions: number;
+  total_buy_transactions: number;
+  total_sell_transactions: number;
+  net_investment: number;
+  latest_transaction_date?: string;
 }
 
 export async function getTransactions(assetId?: number, familyId?: number) {

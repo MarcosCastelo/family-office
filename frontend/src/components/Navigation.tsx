@@ -28,10 +28,7 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
 
   return (
     <nav style={{
-      background: 'white',
-      padding: '16px 0',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-      borderBottom: '1px solid #e9ecef'
+      padding: '12px 0'
     }}>
       <div style={{
         maxWidth: 1200,
@@ -53,8 +50,8 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '12px 20px',
-                borderRadius: 12,
+                padding: '10px 18px',
+                borderRadius: 10,
                 border: 'none',
                 background: isActive
                   ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
@@ -92,7 +89,7 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
                   bottom: 0,
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  width: 20,
+                  width: 24,
                   height: 3,
                   background: 'rgba(255,255,255,0.8)',
                   borderRadius: '2px 2px 0 0'

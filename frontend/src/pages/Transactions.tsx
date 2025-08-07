@@ -10,15 +10,15 @@ import {
 } from 'lucide-react';
 import { useFamily } from '../contexts/FamilyContext';
 import { useToast } from '../components/Toast';
-import { getAssets, Asset } from '../services/assets';
+import { getAssets, type Asset } from '../services/assets';
 import { 
   getTransactions, 
   createTransaction, 
   updateTransaction, 
   deleteTransaction,
   getTransactionSummary,
-  Transaction,
-  TransactionSummary as TSummary
+  type Transaction,
+  type TransactionSummary as TSummary
 } from '../services/transactions';
 import TransactionForm from '../components/TransactionForm';
 import TransactionsList from '../components/TransactionsList';

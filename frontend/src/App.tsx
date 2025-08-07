@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { FamilyProvider, useFamily } from './contexts/FamilyContext';
 import { ToastProvider } from './components/Toast';
 import Header from './components/Header';
-import Navigation from './components/Navigation';
 import Dashboard from './pages/Dashboard';
 import Assets from './pages/Assets';
 import Transactions from './pages/Transactions';
 import RiskAnalysis from './pages/RiskAnalysis';
 import Upload from './pages/Upload';
 import Profile from './pages/Profile';
+import AdminPanel from './pages/AdminPanel';
 import Login from './pages/Login';
 
 function AppContent() {
-  const { user } = useAuth();
-  const { families, selectedFamilyId, setSelectedFamilyId } = useFamily();
+  const { isAuthenticated } = useAuth();
+  const { families, selectedFamilyId, setSelectedFamilyId, loading: familiesLoading, error: familiesError } = useFamily();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
 
@@ -36,7 +37,7 @@ function AppContent() {
     }
   }, [activeTab]);
 
-  if (!user) {
+  if (!isAuthenticated) {
     return <Login />;
   }
 
@@ -54,6 +55,7 @@ function AppContent() {
         return <Upload />;
       case 'profile':
         return <Profile />;
+
       default:
         return <Dashboard />;
     }
@@ -68,6 +70,10 @@ function AppContent() {
         selectedFamilyId={selectedFamilyId}
         onFamilyChange={setSelectedFamilyId}
         families={families}
+        familiesLoading={familiesLoading}
+        familiesError={familiesError}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
       />
       
       <div style={{
@@ -82,8 +88,7 @@ function AppContent() {
         marginTop: 24,
         marginBottom: 24
       }}>
-        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-        <div style={{ marginTop: 32 }}>
+        <div style={{ marginTop: 0 }}>
           {renderContent()}
         </div>
       </div>
@@ -91,14 +96,25 @@ function AppContent() {
   );
 }
 
+function AdminRoute() {
+  return <AdminPanel />;
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <FamilyProvider>
-        <ToastProvider>
-          <AppContent />
-        </ToastProvider>
-      </FamilyProvider>
-    </AuthProvider>
+    <Router>
+      <Routes>
+        <Route path="/admin" element={<AdminRoute />} />
+        <Route path="*" element={
+          <AuthProvider>
+            <FamilyProvider>
+              <ToastProvider>
+                <AppContent />
+              </ToastProvider>
+            </FamilyProvider>
+          </AuthProvider>
+        } />
+      </Routes>
+    </Router>
   );
 }

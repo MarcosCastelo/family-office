@@ -11,7 +11,7 @@ import {
   Filter,
   Search
 } from 'lucide-react';
-import { Transaction } from '../services/transactions';
+import { type Transaction } from '../services/transactions';
 
 interface TransactionsListProps {
   transactions: Transaction[];
@@ -100,10 +100,9 @@ export default function TransactionsList({ transactions, onEdit, onDelete, loadi
         padding: 16,
         background: '#f8fafc',
         borderRadius: 12,
-        flexWrap: 'wrap'
       }}>
         {/* Busca */}
-        <div style={{ position: 'relative', minWidth: 200, flex: 1 }}>
+        <div style={{ position: 'relative', minWidth: 200, marginRight: 64 }}>
           <Search size={18} style={{
             position: 'absolute',
             left: 12,

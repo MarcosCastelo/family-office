@@ -113,3 +113,23 @@ def trigger_family_risk(family_id):
     # Endpoint mock: não faz nada, apenas garante commit/visibilidade para o teste
     db.session.commit()
     return {"message": "Score recalculado (mock)"}, 200
+
+# ===== CASH BALANCE MANAGEMENT =====
+
+@family_bp.route("/<int:family_id>/cash/add", methods=["POST"])
+@jwt_required()
+def add_family_cash(family_id):
+    from app.controllers.family_controller import add_cash_controller
+    return add_cash_controller(family_id)
+
+@family_bp.route("/<int:family_id>/cash/withdraw", methods=["POST"])
+@jwt_required()
+def withdraw_family_cash(family_id):
+    from app.controllers.family_controller import withdraw_cash_controller
+    return withdraw_cash_controller(family_id)
+
+@family_bp.route("/<int:family_id>/balance", methods=["GET"])
+@jwt_required()
+def get_family_balance(family_id):
+    from app.controllers.family_controller import get_family_balance_controller
+    return get_family_balance_controller(family_id)

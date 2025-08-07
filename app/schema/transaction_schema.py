@@ -26,12 +26,19 @@ class TransactionSchema(Schema):
 class TransactionSummarySchema(Schema):
     """Schema for transaction summary/aggregation data"""
     
+    # Novos campos (esperados pelo frontend atual)
+    current_quantity = fields.Float()
+    current_value = fields.Float()
+    average_cost = fields.Float()
+    total_invested = fields.Float()
+    total_divested = fields.Float()
+    realized_gain_loss = fields.Float()
+    unrealized_gain_loss = fields.Float()
+    transaction_count = fields.Int()
+    
+    # Campos antigos (para compatibilidade)
     total_transactions = fields.Int()
     total_buy_transactions = fields.Int()
     total_sell_transactions = fields.Int()
-    total_invested = fields.Float()
-    total_divested = fields.Float()
     net_investment = fields.Float()
-    current_quantity = fields.Float()
-    average_cost = fields.Float()
     latest_transaction_date = fields.Date(allow_none=True)

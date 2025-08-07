@@ -8,39 +8,31 @@ import {
   Activity,
   Users,
   BarChart3,
-  LayoutDashboard
+  LayoutDashboard,
+  Wallet,
+  PiggyBank,
+  Percent
 } from 'lucide-react';
 import { getDashboardData } from '../services/dashboard';
 import { useFamily } from '../contexts/FamilyContext';
 
 interface DashboardData {
-  valor_total: number;
+  patrimonio_total: number;
+  patrimonio_investido: number;
+  patrimonio_nao_investido: number;
+  percentual_investido: number;
   num_ativos: number;
   distribuicao_classes: Array<{ classe: string; valor: number }>;
   top_ativos: Array<{ 
     id: number; 
     name: string; 
-    value?: number; // Legacy field
-    current_value?: number; // New dynamic field
-    current_quantity?: number;
-    transaction_count?: number;
-    asset_type: string 
+    value: number;
+    asset_type: string;
+    quantity: number;
+    average_cost: number;
   }>;
   alertas_recentes: Array<{ tipo: string; mensagem: string; severidade: string; criado_em: string }>;
   score_risco: { score_global: number; classificacao_final: string };
-  // New transaction-related fields
-  total_invested?: number;
-  total_divested?: number;
-  total_transactions?: number;
-  recent_transactions?: Array<{
-    id: number;
-    asset_name: string;
-    transaction_type: string;
-    quantity: number;
-    unit_price: number;
-    total_value: number;
-    transaction_date: string;
-  }>;
 }
 
 export default function Dashboard() {
@@ -78,6 +70,10 @@ export default function Dashboard() {
     }).format(value);
   };
 
+  const formatNumber = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
+  };
+
   const getRiskColor = (classification: string) => {
     switch (classification.toLowerCase()) {
       case 'crítico':
@@ -108,383 +104,454 @@ export default function Dashboard() {
     }
   };
 
+  const getAssetTypeLabel = (type: string) => {
+    const labels: { [key: string]: string } = {
+      'renda_fixa': 'Renda Fixa',
+      'renda_variavel': 'Renda Variável',
+      'multimercado': 'Multimercado',
+      'ativos_reais': 'Ativos Reais',
+      'estrategicos': 'Estratégicos',
+      'internacionais': 'Internacionais',
+      'alternativos': 'Alternativos',
+      'protecao': 'Proteção'
+    };
+    return labels[type] || type;
+  };
+
+  const getAssetTypeColor = (type: string) => {
+    const colors: { [key: string]: string } = {
+      'renda_fixa': '#22c55e',
+      'renda_variavel': '#3b82f6',
+      'multimercado': '#8b5cf6',
+      'ativos_reais': '#f59e0b',
+      'estrategicos': '#ef4444',
+      'internacionais': '#06b6d4',
+      'alternativos': '#ec4899',
+      'protecao': '#84cc16'
+    };
+    return colors[type] || '#666';
+  };
+
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '400px',
-        color: '#666'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <Activity size={48} style={{ marginBottom: 16, opacity: 0.6 }} />
-          <div>Carregando dados...</div>
-        </div>
+      <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>
+        Carregando dashboard...
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '400px',
-        color: '#d32f2f'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <AlertTriangle size={48} style={{ marginBottom: 16 }} />
-          <div>Erro: {error}</div>
-        </div>
+      <div style={{ padding: 24, textAlign: 'center', color: '#d32f2f' }}>
+        Erro: {error}
       </div>
     );
   }
 
-  if (!selectedFamilyId) {
+  if (!dashboardData) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '400px',
-        color: '#666'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <Users size={48} style={{ marginBottom: 16, opacity: 0.6 }} />
-          <div>Selecione uma família para visualizar o dashboard.</div>
-        </div>
+      <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>
+        Nenhum dado disponível
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <div>
+      {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ 
+          margin: 0, 
           color: '#222', 
-          marginBottom: 16, 
-          fontSize: '28px',
-          fontWeight: 600,
+          fontSize: 28, 
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: 12
         }}>
-          <LayoutDashboard size={28} />
+          <LayoutDashboard size={32} />
           Dashboard
         </h1>
+        <p style={{ 
+          margin: '8px 0 0 0', 
+          color: '#666', 
+          fontSize: 16 
+        }}>
+          Visão geral do patrimônio e investimentos
+        </p>
       </div>
 
-      {dashboardData && (
-        <div style={{ display: 'grid', gap: 24 }}>
-          {/* Cards de Resumo */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20 }}>
-            {/* Valor Total */}
-            <div style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              padding: 24,
-              borderRadius: 16,
-              boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <DollarSign size={24} />
-                <span style={{ fontSize: 14, opacity: 0.9 }}>Valor Total</span>
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700 }}>
-                {formatCurrency(dashboardData.valor_total)}
-              </div>
-            </div>
-
-            {/* Número de Ativos */}
-            <div style={{
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-              color: 'white',
-              padding: 24,
-              borderRadius: 16,
-              boxShadow: '0 8px 32px rgba(240, 147, 251, 0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <PieChart size={24} />
-                <span style={{ fontSize: 14, opacity: 0.9 }}>Total de Ativos</span>
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700 }}>
-                {dashboardData.num_ativos}
-              </div>
-            </div>
-
-            {/* Score de Risco */}
-            <div style={{
-              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-              color: 'white',
-              padding: 24,
-              borderRadius: 16,
-              boxShadow: '0 8px 32px rgba(79, 172, 254, 0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <Target size={24} />
-                <span style={{ fontSize: 14, opacity: 0.9 }}>Score de Risco</span>
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700 }}>
-                {dashboardData.score_risco.score_global}
-              </div>
-              <div style={{ fontSize: 14, opacity: 0.9, textTransform: 'capitalize' }}>
-                {dashboardData.score_risco.classificacao_final}
-              </div>
-            </div>
-
-            {/* Alertas */}
-            <div style={{
-              background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-              color: 'white',
-              padding: 24,
-              borderRadius: 16,
-              boxShadow: '0 8px 32px rgba(250, 112, 154, 0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <AlertTriangle size={24} />
-                <span style={{ fontSize: 14, opacity: 0.9 }}>Alertas Ativos</span>
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700 }}>
-                {dashboardData.alertas_recentes.length}
-              </div>
+      {/* Métricas Principais */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gap: 24, 
+        marginBottom: 32 
+      }}>
+        {/* Patrimônio Total */}
+        <div style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          padding: 24,
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <DollarSign size={24} />
+              <span style={{ fontSize: 16, fontWeight: 600 }}>Patrimônio Total</span>
             </div>
           </div>
+          <div style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
+            {formatCurrency(dashboardData.patrimonio_total)}
+          </div>
+          <div style={{ fontSize: 14, opacity: 0.9 }}>
+            {dashboardData.num_ativos} ativo{dashboardData.num_ativos !== 1 ? 's' : ''}
+          </div>
+        </div>
 
-          {/* Gráficos e Tabelas */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-            {/* Top Ativos */}
-            <div style={{
-              background: '#fff',
-              borderRadius: 16,
-              padding: 24,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid #e9ecef'
-            }}>
-              <h3 style={{ 
-                color: '#222', 
-                marginBottom: 20, 
-                fontSize: 18,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8
-              }}>
-                <TrendingUp size={20} />
-                Top Ativos
-              </h3>
-              
-              <div style={{ display: 'grid', gap: 12 }}>
-                {dashboardData.top_ativos.map((ativo, index) => (
-                  <div key={ativo.id} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    background: '#f8f9fa',
-                    borderRadius: 8,
-                    border: '1px solid #e9ecef'
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 500, color: '#222' }}>
-                        {ativo.name}
+        {/* Patrimônio Investido */}
+        <div style={{
+          background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+          color: 'white',
+          padding: 24,
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(34, 197, 94, 0.3)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <TrendingUp size={24} />
+              <span style={{ fontSize: 16, fontWeight: 600 }}>Patrimônio Investido</span>
+            </div>
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
+            {formatCurrency(dashboardData.patrimonio_investido)}
+          </div>
+          <div style={{ fontSize: 14, opacity: 0.9 }}>
+            {dashboardData.percentual_investido}% do total
+          </div>
+        </div>
+
+        {/* Patrimônio Não Investido */}
+        <div style={{
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          color: 'white',
+          padding: 24,
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(245, 158, 11, 0.3)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <PiggyBank size={24} />
+              <span style={{ fontSize: 16, fontWeight: 600 }}>Saldo Disponível</span>
+            </div>
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
+            {formatCurrency(dashboardData.patrimonio_nao_investido)}
+          </div>
+          <div style={{ fontSize: 14, opacity: 0.9 }}>
+            Para novos investimentos
+          </div>
+        </div>
+
+        {/* Score de Risco */}
+        <div style={{
+          background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+          color: 'white',
+          padding: 24,
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(239, 68, 68, 0.3)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Target size={24} />
+              <span style={{ fontSize: 16, fontWeight: 600 }}>Score de Risco</span>
+            </div>
+          </div>
+          <div style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
+            {dashboardData.score_risco.score_global}
+          </div>
+          <div style={{ 
+            fontSize: 14, 
+            opacity: 0.9,
+            textTransform: 'capitalize'
+          }}>
+            {dashboardData.score_risco.classificacao_final}
+          </div>
+        </div>
+      </div>
+
+      {/* Conteúdo Principal */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+        gap: 24 
+      }}>
+        {/* Distribuição por Classe */}
+        <div style={{
+          background: 'white',
+          borderRadius: 16,
+          padding: 24,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ 
+            margin: '0 0 20px 0', 
+            color: '#222', 
+            fontSize: 20, 
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <PieChart size={20} />
+            Distribuição por Classe
+          </h3>
+          
+          {dashboardData.distribuicao_classes.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {dashboardData.distribuicao_classes.map((item, index) => {
+                const percentage = dashboardData.patrimonio_investido > 0 
+                  ? (item.valor / dashboardData.patrimonio_investido * 100) 
+                  : 0;
+                
+                return (
+                  <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: '50%',
+                      background: getAssetTypeColor(item.classe),
+                      flexShrink: 0
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: 4
+                      }}>
+                        <span style={{ 
+                          fontSize: 14, 
+                          fontWeight: 500, 
+                          color: '#333',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {getAssetTypeLabel(item.classe)}
+                        </span>
+                        <span style={{ 
+                          fontSize: 14, 
+                          fontWeight: 600, 
+                          color: '#222',
+                          marginLeft: 8
+                        }}>
+                          {formatCurrency(item.valor)}
+                        </span>
                       </div>
-                      <div style={{ fontSize: 12, color: '#666', textTransform: 'capitalize' }}>
-                        {ativo.asset_type.replace('_', ' ')}
-                        {ativo.transaction_count !== undefined && (
-                          <span style={{ marginLeft: 8, color: '#667eea' }}>
-                            • {ativo.transaction_count} transações
-                          </span>
-                        )}
+                      <div style={{
+                        width: '100%',
+                        height: 6,
+                        background: '#f1f5f9',
+                        borderRadius: 3,
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${percentage}%`,
+                          height: '100%',
+                          background: getAssetTypeColor(item.classe),
+                          borderRadius: 3,
+                          transition: 'width 0.3s ease'
+                        }} />
                       </div>
-                      {ativo.current_quantity !== undefined && (
-                        <div style={{ fontSize: 12, color: '#8b5cf6', marginTop: 2 }}>
-                          Qtd: {ativo.current_quantity.toLocaleString('pt-BR', { maximumFractionDigits: 6 })}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 600, color: ativo.current_value !== undefined ? '#22c55e' : '#667eea' }}>
-                        {formatCurrency(ativo.current_value !== undefined ? ativo.current_value : (ativo.value || 0))}
+                      <div style={{ 
+                        fontSize: 12, 
+                        color: '#666', 
+                        marginTop: 4,
+                        textAlign: 'right'
+                      }}>
+                        {percentage.toFixed(1)}%
                       </div>
-                      {ativo.current_value !== undefined && ativo.value !== undefined && (
-                        <div style={{ fontSize: 10, color: '#666' }}>
-                          Dinâmico
-                        </div>
-                      )}
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
+          ) : (
+            <div style={{ textAlign: 'center', color: '#666', padding: 20 }}>
+              Nenhum ativo encontrado
+            </div>
+          )}
+        </div>
 
-            {/* Alertas Recentes */}
-            <div style={{
-              background: '#fff',
-              borderRadius: 16,
-              padding: 24,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid #e9ecef'
-            }}>
-              <h3 style={{ 
-                color: '#222', 
-                marginBottom: 20, 
-                fontSize: 18,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8
-              }}>
-                <AlertTriangle size={20} />
-                Alertas Recentes
-              </h3>
-              
-              <div style={{ display: 'grid', gap: 12 }}>
-                {dashboardData.alertas_recentes.map((alerta, index) => (
-                  <div key={index} style={{
-                    padding: '12px 16px',
-                    background: '#f8f9fa',
-                    borderRadius: 8,
-                    border: '1px solid #e9ecef',
-                    borderLeft: `4px solid ${getSeverityColor(alerta.severidade)}`
+        {/* Top Ativos */}
+        <div style={{
+          background: 'white',
+          borderRadius: 16,
+          padding: 24,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ 
+            margin: '0 0 20px 0', 
+            color: '#222', 
+            fontSize: 20, 
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <TrendingUp size={20} />
+            Top Ativos
+          </h3>
+          
+          {dashboardData.top_ativos.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {dashboardData.top_ativos.map((ativo, index) => (
+                <div key={ativo.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: 16,
+                  background: '#f8fafc',
+                  borderRadius: 12,
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    background: getAssetTypeColor(ativo.asset_type),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: 14
                   }}>
+                    {index + 1}
+                  </div>
+                  
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ 
-                      fontWeight: 500, 
+                      fontSize: 16, 
+                      fontWeight: 600, 
                       color: '#222',
-                      marginBottom: 4
+                      marginBottom: 4,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
                     }}>
-                      {alerta.tipo}
+                      {ativo.name}
                     </div>
                     <div style={{ 
                       fontSize: 12, 
                       color: '#666',
-                      marginBottom: 4
+                      textTransform: 'capitalize'
                     }}>
-                      {alerta.mensagem}
+                      {getAssetTypeLabel(ativo.asset_type)}
+                    </div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ 
+                      fontSize: 16, 
+                      fontWeight: 600, 
+                      color: '#22c55e',
+                      marginBottom: 2
+                    }}>
+                      {formatCurrency(ativo.value)}
                     </div>
                     <div style={{ 
-                      fontSize: 10, 
-                      color: getSeverityColor(alerta.severidade),
-                      fontWeight: 600,
-                      textTransform: 'uppercase'
+                      fontSize: 12, 
+                      color: '#666'
                     }}>
-                      {alerta.severidade}
+                      {formatNumber(ativo.quantity)} unid.
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Distribuição por Classe */}
-          <div style={{
-            background: '#fff',
-            borderRadius: 16,
-            padding: 24,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            border: '1px solid #e9ecef'
-          }}>
-            <h3 style={{ 
-              color: '#222', 
-              marginBottom: 20, 
-              fontSize: 18,
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
-              <BarChart3 size={20} />
-              Distribuição por Classe
-            </h3>
-            
-            <div style={{ display: 'grid', gap: 12 }}>
-              {dashboardData.distribuicao_classes.map((classe, index) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  background: '#f8f9fa',
-                  borderRadius: 8,
-                  border: '1px solid #e9ecef'
-                }}>
-                  <div style={{ 
-                    fontWeight: 500, 
-                    color: '#222',
-                    textTransform: 'capitalize'
-                  }}>
-                    {classe.classe.replace('_', ' ')}
-                  </div>
-                  <div style={{ fontWeight: 600, color: '#667eea' }}>
-                    {formatCurrency(classe.valor)}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Transações Recentes */}
-          {dashboardData.recent_transactions && dashboardData.recent_transactions.length > 0 && (
-            <div style={{
-              background: '#fff',
-              borderRadius: 16,
-              padding: 24,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              border: '1px solid #e9ecef'
-            }}>
-              <h3 style={{ 
-                color: '#222', 
-                marginBottom: 20, 
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8
-              }}>
-                <Activity size={20} />
-                Transações Recentes
-              </h3>
-              
-              <div style={{ display: 'grid', gap: 12 }}>
-                {dashboardData.recent_transactions.slice(0, 5).map((transaction) => (
-                  <div key={transaction.id} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    background: '#f8f9fa',
-                    borderRadius: 8,
-                    border: '1px solid #e9ecef'
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 500, color: '#222' }}>
-                        {transaction.asset_name}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#666' }}>
-                        {transaction.transaction_type === 'buy' ? 'Compra' : 'Venda'} de {transaction.quantity} unidades
-                        <span style={{ marginLeft: 8, color: '#8b5cf6' }}>
-                          • {new Date(transaction.transaction_date).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ 
-                        fontWeight: 600, 
-                        color: transaction.transaction_type === 'buy' ? '#22c55e' : '#ef4444' 
-                      }}>
-                        {formatCurrency(transaction.total_value)}
-                      </div>
-                      <div style={{ fontSize: 10, color: '#666' }}>
-                        {formatCurrency(transaction.unit_price)}/unidade
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          ) : (
+            <div style={{ textAlign: 'center', color: '#666', padding: 20 }}>
+              Nenhum ativo encontrado
             </div>
           )}
         </div>
-      )}
+
+        {/* Alertas Recentes */}
+        <div style={{
+          background: 'white',
+          borderRadius: 16,
+          padding: 24,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+          <h3 style={{ 
+            margin: '0 0 20px 0', 
+            color: '#222', 
+            fontSize: 20, 
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <AlertTriangle size={20} />
+            Alertas Recentes
+          </h3>
+          
+          {dashboardData.alertas_recentes.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {dashboardData.alertas_recentes.map((alerta, index) => (
+                <div key={index} style={{
+                  padding: 16,
+                  background: '#fef2f2',
+                  border: `1px solid ${getSeverityColor(alerta.severidade)}20`,
+                  borderRadius: 12,
+                  borderLeft: `4px solid ${getSeverityColor(alerta.severidade)}`
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 8,
+                    marginBottom: 8
+                  }}>
+                    <div style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: getSeverityColor(alerta.severidade)
+                    }} />
+                    <span style={{ 
+                      fontSize: 12, 
+                      fontWeight: 600, 
+                      color: getSeverityColor(alerta.severidade),
+                      textTransform: 'uppercase'
+                    }}>
+                      {alerta.severidade}
+                    </span>
+                    <span style={{ 
+                      fontSize: 12, 
+                      color: '#666'
+                    }}>
+                      {new Date(alerta.criado_em).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                  <div style={{ 
+                    fontSize: 14, 
+                    color: '#333',
+                    lineHeight: 1.4
+                  }}>
+                    {alerta.mensagem}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', color: '#666', padding: 20 }}>
+              Nenhum alerta recente
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 } 

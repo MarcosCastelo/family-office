@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { getUserFamilies } from '../services/family';
+import { useFamilyStorage } from '../hooks/useFamilyStorage';
 
 interface Family {
   id: number;
@@ -28,6 +29,9 @@ export function FamilyProvider({ children }: FamilyProviderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Hook para gerenciar localStorage
+  const { getSelectedFamily, setSelectedFamily, validateFamilyExists } = useFamilyStorage();
+
   const loadFamilies = async () => {
     try {
       setLoading(true);
@@ -35,9 +39,23 @@ export function FamilyProvider({ children }: FamilyProviderProps) {
       const familiesData = await getUserFamilies();
       setFamilies(familiesData);
       
-      // Se não há família selecionada e há famílias disponíveis, seleciona a primeira
-      if (!selectedFamilyId && familiesData.length > 0) {
-        setSelectedFamilyId(familiesData[0].id);
+      // Recuperar família selecionada do localStorage
+      const storedFamilyId = getSelectedFamily();
+      
+      // Verificar se a família salva ainda está disponível
+      const isStoredFamilyAvailable = storedFamilyId && validateFamilyExists(storedFamilyId, familiesData);
+      
+      if (isStoredFamilyAvailable) {
+        setSelectedFamilyId(storedFamilyId);
+      } else if (familiesData.length > 0) {
+        // Se não há família válida salva ou não há família selecionada, seleciona a primeira
+        const firstFamilyId = familiesData[0].id;
+        setSelectedFamilyId(firstFamilyId);
+        setSelectedFamily(firstFamilyId);
+      } else {
+        // Se não há famílias disponíveis, limpa a seleção
+        setSelectedFamilyId(null);
+        setSelectedFamily(null);
       }
     } catch (err: any) {
       console.error('Erro ao carregar famílias:', err);
@@ -51,6 +69,12 @@ export function FamilyProvider({ children }: FamilyProviderProps) {
     loadFamilies();
   };
 
+  // Função wrapper para setSelectedFamilyId que também salva no localStorage
+  const handleSetSelectedFamilyId = (familyId: number) => {
+    setSelectedFamilyId(familyId);
+    setSelectedFamily(familyId);
+  };
+
   useEffect(() => {
     loadFamilies();
   }, []);
@@ -58,7 +82,7 @@ export function FamilyProvider({ children }: FamilyProviderProps) {
   const value: FamilyContextType = {
     families,
     selectedFamilyId,
-    setSelectedFamilyId,
+    setSelectedFamilyId: handleSetSelectedFamilyId,
     loading,
     error,
     refreshFamilies

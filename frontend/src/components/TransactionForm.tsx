@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, DollarSign, Calendar, FileText, TrendingUp, TrendingDown } from 'lucide-react';
-import { Transaction } from '../services/transactions';
-import { Asset } from '../services/assets';
+import { type Transaction } from '../services/transactions';
+import { type Asset } from '../services/assets';
 import { useToast } from './Toast';
 
 interface TransactionFormProps {
@@ -31,6 +32,14 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
     setTotalValue(quantity * unitPrice);
   }, [formData.quantity, formData.unit_price]);
 
+  // Prevenir scroll do body quando modal está aberta
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -58,7 +67,7 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
 
     try {
       await onSubmit({
-        asset_id: asset.id,
+        asset_id: asset.id!,
         transaction_type: formData.transaction_type,
         quantity,
         unit_price: unitPrice,
@@ -77,42 +86,69 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
     }).format(value);
   };
 
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: 16,
-        padding: 32,
-        maxWidth: 500,
-        width: '100%',
-        margin: 16,
-        maxHeight: '90vh',
-        overflow: 'auto',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
-      }}>
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onCancel();
+    }
+  };
+
+  const modalContent = (
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '20px'
+      }}
+      onClick={handleBackdropClick}
+    >
+      <div 
+        style={{
+          background: 'white',
+          borderRadius: '16px',
+          padding: '32px',
+          maxWidth: '500px',
+          width: '100%',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          position: 'relative',
+          transform: 'scale(1)',
+          transition: 'all 0.3s ease-out'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 24
+          alignItems: 'flex-start',
+          marginBottom: '24px',
+          gap: '16px'
         }}>
-          <div>
-            <h2 style={{ margin: 0, color: '#222', fontSize: 24, fontWeight: 600 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ 
+              margin: 0, 
+              color: '#222', 
+              fontSize: '24px', 
+              fontWeight: 600,
+              wordBreak: 'break-word'
+            }}>
               {transaction ? 'Editar Transação' : 'Nova Transação'}
             </h2>
-            <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: 14 }}>
+            <p style={{ 
+              margin: '8px 0 0 0', 
+              color: '#666', 
+              fontSize: '16px',
+              wordBreak: 'break-word'
+            }}>
               Ativo: {asset.name}
             </p>
           </div>
@@ -122,9 +158,21 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
               border: 'none',
               background: 'transparent',
               cursor: 'pointer',
-              padding: 8,
-              borderRadius: 8,
-              color: '#666'
+              padding: '8px',
+              borderRadius: '8px',
+              color: '#666',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f3f4f6';
+              e.currentTarget.style.color = '#374151';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#666';
             }}
           >
             <X size={24} />
@@ -133,31 +181,34 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
 
         <form onSubmit={handleSubmit}>
           {/* Tipo de Transação */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, color: '#333' }}>
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, color: '#333', fontSize: '16px' }}>
               Tipo de Transação
             </label>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, transaction_type: 'buy' })}
                 style={{
                   flex: 1,
-                  padding: '12px 16px',
+                  minWidth: '140px',
+                  padding: '16px 20px',
                   border: `2px solid ${formData.transaction_type === 'buy' ? '#22c55e' : '#e5e7eb'}`,
                   background: formData.transaction_type === 'buy' ? '#f0fdf4' : 'white',
                   color: formData.transaction_type === 'buy' ? '#22c55e' : '#666',
-                  borderRadius: 8,
+                  borderRadius: '12px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8,
-                  fontWeight: 500,
-                  transition: 'all 0.2s ease'
+                  gap: '8px',
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  transition: 'all 0.2s ease',
+                  boxSizing: 'border-box'
                 }}
               >
-                <TrendingUp size={18} />
+                <TrendingUp size={20} />
                 Compra
               </button>
               <button
@@ -165,29 +216,32 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
                 onClick={() => setFormData({ ...formData, transaction_type: 'sell' })}
                 style={{
                   flex: 1,
-                  padding: '12px 16px',
+                  minWidth: '140px',
+                  padding: '16px 20px',
                   border: `2px solid ${formData.transaction_type === 'sell' ? '#ef4444' : '#e5e7eb'}`,
                   background: formData.transaction_type === 'sell' ? '#fef2f2' : 'white',
                   color: formData.transaction_type === 'sell' ? '#ef4444' : '#666',
-                  borderRadius: 8,
+                  borderRadius: '12px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8,
-                  fontWeight: 500,
-                  transition: 'all 0.2s ease'
+                  gap: '8px',
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  transition: 'all 0.2s ease',
+                  boxSizing: 'border-box'
                 }}
               >
-                <TrendingDown size={18} />
+                <TrendingDown size={20} />
                 Venda
               </button>
             </div>
           </div>
 
           {/* Quantidade */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, color: '#333' }}>
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, color: '#333', fontSize: '16px' }}>
               Quantidade
             </label>
             <input
@@ -199,33 +253,41 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
               required
               style={{
                 width: '100%',
-                padding: '12px 16px',
+                padding: '16px 20px',
                 border: '2px solid #e5e7eb',
-                borderRadius: 8,
-                fontSize: 14,
-                transition: 'border-color 0.2s ease'
+                borderRadius: '12px',
+                fontSize: '16px',
+                transition: 'all 0.2s ease',
+                boxSizing: 'border-box',
+                background: 'white'
               }}
-              onFocus={e => e.target.style.borderColor = '#667eea'}
-              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+              onFocus={e => {
+                e.target.style.borderColor = '#667eea';
+                e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+              }}
+              onBlur={e => {
+                e.target.style.borderColor = '#e5e7eb';
+                e.target.style.boxShadow = 'none';
+              }}
             />
             {formData.transaction_type === 'sell' && asset.current_quantity !== undefined && (
-              <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#666' }}>
-                Quantidade disponível: {asset.current_quantity}
+              <p style={{ margin: '8px 0 0 0', fontSize: '14px', color: '#666' }}>
+                Quantidade disponível: <strong>{asset.current_quantity}</strong>
               </p>
             )}
           </div>
 
           {/* Preço Unitário */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, color: '#333' }}>
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, color: '#333', fontSize: '16px' }}>
               Preço Unitário
             </label>
             <div style={{ position: 'relative' }}>
               <DollarSign 
-                size={18} 
+                size={20} 
                 style={{ 
                   position: 'absolute', 
-                  left: 12, 
+                  left: '16px', 
                   top: '50%', 
                   transform: 'translateY(-50%)', 
                   color: '#666' 
@@ -240,14 +302,22 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
                 required
                 style={{
                   width: '100%',
-                  padding: '12px 16px 12px 40px',
+                  padding: '16px 20px 16px 48px',
                   border: '2px solid #e5e7eb',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  transition: 'border-color 0.2s ease'
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  transition: 'all 0.2s ease',
+                  boxSizing: 'border-box',
+                  background: 'white'
                 }}
-                onFocus={e => e.target.style.borderColor = '#667eea'}
-                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                onFocus={e => {
+                  e.target.style.borderColor = '#667eea';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
@@ -255,17 +325,17 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
           {/* Valor Total */}
           {totalValue > 0 && (
             <div style={{
-              padding: 12,
+              padding: '20px',
               background: '#f8fafc',
-              borderRadius: 8,
-              marginBottom: 20,
-              border: '1px solid #e2e8f0'
+              borderRadius: '12px',
+              marginBottom: '24px',
+              border: '2px solid #e2e8f0'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#666', fontSize: 14 }}>Valor Total:</span>
+                <span style={{ color: '#666', fontSize: '16px', fontWeight: 500 }}>Valor Total:</span>
                 <span style={{ 
-                  fontWeight: 600, 
-                  fontSize: 16, 
+                  fontWeight: 700, 
+                  fontSize: '20px', 
                   color: formData.transaction_type === 'buy' ? '#22c55e' : '#ef4444' 
                 }}>
                   {formatCurrency(totalValue)}
@@ -275,16 +345,16 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
           )}
 
           {/* Data da Transação */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, color: '#333' }}>
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, color: '#333', fontSize: '16px' }}>
               Data da Transação
             </label>
             <div style={{ position: 'relative' }}>
               <Calendar 
-                size={18} 
+                size={20} 
                 style={{ 
                   position: 'absolute', 
-                  left: 12, 
+                  left: '16px', 
                   top: '50%', 
                   transform: 'translateY(-50%)', 
                   color: '#666' 
@@ -297,30 +367,38 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
                 required
                 style={{
                   width: '100%',
-                  padding: '12px 16px 12px 40px',
+                  padding: '16px 20px 16px 48px',
                   border: '2px solid #e5e7eb',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  transition: 'border-color 0.2s ease'
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  transition: 'all 0.2s ease',
+                  boxSizing: 'border-box',
+                  background: 'white'
                 }}
-                onFocus={e => e.target.style.borderColor = '#667eea'}
-                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                onFocus={e => {
+                  e.target.style.borderColor = '#667eea';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
 
           {/* Descrição */}
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, color: '#333' }}>
+          <div style={{ marginBottom: '32px' }}>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, color: '#333', fontSize: '16px' }}>
               Descrição (opcional)
             </label>
             <div style={{ position: 'relative' }}>
               <FileText 
-                size={18} 
+                size={20} 
                 style={{ 
                   position: 'absolute', 
-                  left: 12, 
-                  top: 16, 
+                  left: '16px', 
+                  top: '20px', 
                   color: '#666' 
                 }} 
               />
@@ -330,17 +408,25 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
                 placeholder="Adicione uma descrição..."
                 style={{
                   width: '100%',
-                  padding: '12px 16px 12px 40px',
+                  padding: '16px 20px 16px 48px',
                   border: '2px solid #e5e7eb',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  minHeight: 80,
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  minHeight: '100px',
                   resize: 'vertical',
                   fontFamily: 'inherit',
-                  transition: 'border-color 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  boxSizing: 'border-box',
+                  background: 'white'
                 }}
-                onFocus={e => e.target.style.borderColor = '#667eea'}
-                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                onFocus={e => {
+                  e.target.style.borderColor = '#667eea';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = '#e5e7eb';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
@@ -348,34 +434,50 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
           {/* Error Message */}
           {error && (
             <div style={{
-              padding: 12,
+              padding: '16px',
               background: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: 8,
+              border: '2px solid #fecaca',
+              borderRadius: '12px',
               color: '#dc2626',
-              marginBottom: 20,
-              fontSize: 14
+              marginBottom: '24px',
+              fontSize: '16px',
+              fontWeight: 500
             }}>
               {error}
             </div>
           )}
 
           {/* Buttons */}
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={onCancel}
               disabled={loading}
               style={{
                 flex: 1,
-                padding: '12px 16px',
+                minWidth: '120px',
+                padding: '16px 24px',
                 border: '2px solid #e5e7eb',
                 background: 'white',
                 color: '#666',
-                borderRadius: 8,
+                borderRadius: '12px',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                fontWeight: 500,
-                transition: 'all 0.2s ease'
+                fontWeight: 600,
+                fontSize: '16px',
+                transition: 'all 0.2s ease',
+                boxSizing: 'border-box'
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.background = '#f8f9fa';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.background = 'white';
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                }
               }}
             >
               Cancelar
@@ -385,14 +487,29 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
               disabled={loading}
               style={{
                 flex: 2,
-                padding: '12px 16px',
+                minWidth: '180px',
+                padding: '16px 24px',
                 border: 'none',
                 background: loading ? '#94a3b8' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
-                borderRadius: 8,
+                borderRadius: '12px',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 fontWeight: 600,
-                transition: 'all 0.2s ease'
+                fontSize: '16px',
+                transition: 'all 0.2s ease',
+                boxSizing: 'border-box'
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 10px 25px rgba(102, 126, 234, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
               }}
             >
               {loading ? 'Salvando...' : (transaction ? 'Atualizar' : 'Criar Transação')}
@@ -402,4 +519,7 @@ export default function TransactionForm({ asset, transaction, onSubmit, onCancel
       </div>
     </div>
   );
+
+  // Renderizar no body usando createPortal
+  return createPortal(modalContent, document.body);
 }
