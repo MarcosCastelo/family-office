@@ -26,6 +26,12 @@ class Asset(db.Model):
         cascade="all, delete-orphan",
         order_by="Transaction.transaction_date.desc()"
     )
+    quote_history = db.relationship(
+        "QuoteHistory",
+        back_populates="asset",
+        cascade="all, delete-orphan",
+        order_by="QuoteHistory.timestamp.desc()"
+    )
     
     @property
     def current_quantity(self):

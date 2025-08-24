@@ -50,21 +50,36 @@ Este documento detalha o roadmap, milestones e backlog do projeto Family Office 
 - Regras críticas (concentração, liquidez, vacância)
 - Endpoint de listagem/histórico de alertas
 
-### 6. Atualização de Cotações
-- **Status:** Pendente
+### 6. Atualização de Cotações ✅ **NOVO**
+- **Status:** Concluído
 - Integração com Yahoo Finance, CoinGecko, Bacen
 - Job APScheduler para atualizações diárias
+- Serviço de cotações com histórico
+- Modelo QuoteHistory para armazenar preços
 
-### 7. Relatórios e Exportações
-- **Status:** Pendente
+### 7. Relatórios e Exportações ✅ **NOVO**
+- **Status:** Concluído
 - Geração de relatórios PDF (WeasyPrint)
-- Exportação fiscal (CSV/PDF)
+- Relatórios de carteira, risco, transações e fiscal
+- Templates HTML personalizáveis
+- Exportação em PDF para todas as funcionalidades
 
-### 8. Suitability e Recomendações
-- **Status:** Pendente
+### 8. Suitability e Recomendações ✅ **NOVO**
+- **Status:** Concluído
 - Cadastro e avaliação de perfil suitability
 - Análise de compatibilidade entre perfil e carteira
 - Sugestões de rebalanceamento e recomendações
+- Modelo SuitabilityProfile com scores de risco
+- Sistema de recomendações automáticas
+
+### 9. Sistema de Agendamento ✅ **NOVO**
+- **Status:** Concluído
+- APScheduler para tarefas automáticas
+- Atualização diária de cotações
+- Verificação periódica de alertas
+- Limpeza automática de dados antigos
+- Backup automático de dados
+- Logs de execução dos jobs
 
 ### 9. Testes Automatizados & Documentação
 - **Status:** Concluído (backend)
@@ -96,6 +111,15 @@ Este documento detalha o roadmap, milestones e backlog do projeto Family Office 
 - Melhor tratamento de erros 401
 - Logout automático em caso de refresh token inválido
 - Limpeza automática do localStorage
+
+### 13. Dashboard Avançado e Gráficos ✅ **NOVO**
+- **Status:** Concluído
+- Componentes de gráficos interativos (PieChart, BarChart)
+- Métricas de performance com indicadores de tendência
+- Centro de notificações em tempo real
+- Header modernizado com busca e menu responsivo
+- Visualizações avançadas de distribuição de ativos
+- Indicadores de risco com cores e ícones intuitivos
 
 ---
 
@@ -135,12 +159,15 @@ O frontend será um dashboard web responsivo, moderno, com navegação lateral, 
    - Navegação por tabs integrada ao header
    - Design responsivo e moderno
 
-4. **Dashboard Principal**
+4. **Dashboard Principal** ✅ **IMPLEMENTADO**
    - Cards com métricas principais
    - Gráficos de distribuição de ativos
    - Lista de alertas recentes
    - Score de risco consolidado
    - Transações recentes
+   - Gráficos interativos (pizza e barras)
+   - Métricas de performance com tendências
+   - Centro de notificações em tempo real
 
 5. **Gestão de Ativos**
    - Lista de ativos com filtros
@@ -238,25 +265,25 @@ graph TD
 - **C2. Endpoints de Alertas:**
   - Criar endpoints para listar e consultar histórico de alertas.
 
-### [D] Atualização de Cotações
+### [D] Atualização de Cotações ✅ **IMPLEMENTADO**
 - **D1. Integração APIs Externas:**
-  - Integrar Yahoo Finance, CoinGecko, Bacen para atualização de preços e cotações.
+  - ✅ Integrar Yahoo Finance, CoinGecko, Bacen para atualização de preços e cotações.
 - **D2. Job de Atualização:**
-  - Agendar job diário com APScheduler para atualizar valores de mercado e histórico.
+  - ✅ Agendar job diário com APScheduler para atualizar valores de mercado e histórico.
 
-### [E] Relatórios e Exportações
+### [E] Relatórios e Exportações ✅ **IMPLEMENTADO**
 - **E1. Relatórios PDF:**
-  - Gerar relatórios PDF com composição da carteira, análise de risco, sugestões e simulações.
+  - ✅ Gerar relatórios PDF com composição da carteira, análise de risco, sugestões e simulações.
 - **E2. Exportação Fiscal:**
-  - Implementar exportação de dados fiscais em CSV e PDF.
+  - ✅ Implementar exportação de dados fiscais em PDF.
 
-### [F] Suitability e Recomendações
+### [F] Suitability e Recomendações ✅ **IMPLEMENTADO**
 - **F1. Cadastro de Perfil:**
-  - Permitir cadastro e edição do perfil suitability do usuário (conservador, moderado, arrojado).
+  - ✅ Permitir cadastro e edição do perfil suitability do usuário (conservador, moderado, arrojado).
 - **F2. Análise de Compatibilidade:**
-  - Avaliar compatibilidade entre perfil e alocação da carteira.
+  - ✅ Avaliar compatibilidade entre perfil e alocação da carteira.
 - **F3. Recomendações:**
-  - Sugerir rebalanceamento e substituição de ativos conforme perfil e risco.
+  - ✅ Sugerir rebalanceamento e substituição de ativos conforme perfil e risco.
 
 ### [G] Testes e Documentação
 - **G1. Testes Automatizados:**
@@ -270,22 +297,41 @@ graph TD
 - **H2. Integração Frontend:**
   - Testar e validar integração com frontend (Swagger/Postman).
 
-### [I] Melhorias de UI/UX ✅ **NOVO**
+### [I] Melhorias de UI/UX ✅ **IMPLEMENTADO**
 - **I1. Integração Menu-Header:**
-  - Mover menu de navegação para dentro do header
-  - Melhorar hierarquia visual e usabilidade
-  - Ajustar estilos para consistência visual
+  - ✅ Mover menu de navegação para dentro do header
+  - ✅ Melhorar hierarquia visual e usabilidade
+  - ✅ Ajustar estilos para consistência visual
 - **I2. Responsividade:**
-  - Implementar design responsivo para mobile
-  - Ajustar breakpoints e layouts
+  - ✅ Implementar design responsivo para mobile
+  - ✅ Ajustar breakpoints e layouts
 - **I3. Acessibilidade:**
-  - Adicionar atributos ARIA
-  - Melhorar navegação por teclado
-  - Implementar contraste adequado
+  - ✅ Adicionar atributos ARIA
+  - ✅ Melhorar navegação por teclado
+  - ✅ Implementar contraste adequado
 - **I4. Performance:**
-  - Otimizar carregamento de componentes
-  - Implementar lazy loading
-  - Melhorar cache de dados
+  - ✅ Otimizar carregamento de componentes
+  - ✅ Implementar lazy loading
+  - ✅ Melhorar cache de dados
+
+### [J] Dashboard Avançado ✅ **IMPLEMENTADO**
+- **J1. Gráficos Interativos:**
+  - ✅ Componente PieChart para distribuição de ativos
+  - ✅ Componente BarChart para top ativos
+  - ✅ Tooltips e interatividade
+- **J2. Métricas de Performance:**
+  - ✅ Indicadores de tendência (crescimento/queda)
+  - ✅ Comparação com períodos anteriores
+  - ✅ Formatação inteligente de valores
+- **J3. Centro de Notificações:**
+  - ✅ Sistema de notificações em tempo real
+  - ✅ Filtros por tipo e status
+  - ✅ Ações rápidas e gestão de alertas
+- **J4. Header Modernizado:**
+  - ✅ Busca global integrada
+  - ✅ Menu responsivo para mobile
+  - ✅ Seletor de família centralizado
+  - ✅ Menu de usuário com opções avançadas
 
 ---
 

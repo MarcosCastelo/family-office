@@ -1,29 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Users, Check } from 'lucide-react';
+import { useFamily } from '../contexts/FamilyContext';
 
 interface Family {
   id: number;
   name: string;
 }
 
-interface FamilySelectProps {
-  families: Family[];
-  selectedFamilyId: number | null;
-  onFamilyChange: (familyId: number) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  variant?: 'default' | 'header';
-}
-
-export default function FamilySelect({ 
-  families, 
-  selectedFamilyId, 
-  onFamilyChange, 
-  placeholder = "Selecione uma família",
-  disabled = false,
-  variant = 'default'
-}: FamilySelectProps) {
+export default function FamilySelect() {
+  const { families, selectedFamilyId, setSelectedFamilyId, loading, error } = useFamily();
   const [isOpen, setIsOpen] = useState(false);
   const [buttonRect, setButtonRect] = useState<DOMRect | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -63,7 +49,7 @@ export default function FamilySelect({
   }, [isOpen]);
 
   const handleButtonClick = () => {
-    if (!disabled) {
+    if (!loading && families.length > 0) {
       if (!isOpen && buttonRef.current) {
         setButtonRect(buttonRef.current.getBoundingClientRect());
       }
@@ -72,199 +58,136 @@ export default function FamilySelect({
   };
 
   const handleSelect = (familyId: number) => {
-    onFamilyChange(familyId);
+    setSelectedFamilyId(familyId);
     setIsOpen(false);
   };
 
-  // Estilos baseados na variante
-  const getButtonStyles = () => {
-    if (variant === 'header') {
-      return {
-        width: '100%',
-        padding: '8px 12px',
-        borderRadius: 6,
-        border: '1px solid rgba(255,255,255,0.3)',
-        background: disabled ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)',
-        color: disabled ? 'rgba(255,255,255,0.6)' : '#222',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        fontSize: 13,
-        fontWeight: 500,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        transition: 'all 0.2s ease',
-        minHeight: 36,
-        backdropFilter: 'blur(10px)'
-      };
-    }
-    
-    return {
-      width: '100%',
-      padding: '10px 16px',
-      borderRadius: 8,
-      border: '1px solid #ddd',
-      background: disabled ? '#f8f9fa' : '#fff',
-      color: disabled ? '#6c757d' : '#222',
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      fontSize: 14,
-      fontWeight: 500,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      transition: 'all 0.2s ease',
-      minHeight: 42
-    };
+  // Estilos para o header
+  const buttonStyles = {
+    width: '100%',
+    padding: '8px 12px',
+    borderRadius: 8,
+    border: '1px solid #e2e8f0',
+    background: loading ? '#f1f5f9' : 'white',
+    color: loading ? '#666' : '#222',
+    cursor: loading ? 'not-allowed' : 'pointer',
+    fontSize: 14,
+    fontWeight: 500,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    transition: 'all 0.2s ease',
+    minHeight: 40,
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
   };
 
-  const getDropdownStyles = () => {
-    if (variant === 'header') {
-      return {
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        right: 0,
-        background: 'rgba(255,255,255,0.95)',
-        border: '1px solid rgba(255,255,255,0.3)',
-        borderRadius: 8,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-        zIndex: 1000,
-        maxHeight: 200,
-        overflowY: 'auto',
-        backdropFilter: 'blur(10px)',
-        marginTop: 4
-      };
-    }
-    
-    return {
-      position: 'absolute',
-      top: '100%',
-      left: 0,
-      right: 0,
-      background: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: 8,
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-      zIndex: 1000,
-      maxHeight: 200,
-      overflowY: 'auto',
-      marginTop: 4
-    };
+  const dropdownStyles = {
+    position: 'absolute' as const,
+    top: buttonRect ? buttonRect.bottom + 8 : 'auto',
+    left: buttonRect ? buttonRect.left : 'auto',
+    width: buttonRect ? buttonRect.width : 'auto',
+    background: 'white',
+    borderRadius: 8,
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    zIndex: 1000,
+    maxHeight: 300,
+    overflowY: 'auto' as const
   };
 
-  const getOptionStyles = (isSelected: boolean) => {
-    if (variant === 'header') {
-      return {
-        padding: '10px 12px',
-        cursor: 'pointer',
-        fontSize: 13,
-        fontWeight: isSelected ? 600 : 500,
-        color: isSelected ? '#667eea' : '#333',
-        background: isSelected ? 'rgba(102, 126, 234, 0.1)' : 'transparent',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        transition: 'all 0.2s ease',
-        borderBottom: '1px solid rgba(0,0,0,0.05)'
-      };
-    }
-    
-    return {
-      padding: '12px 16px',
-      cursor: 'pointer',
-      fontSize: 14,
-      fontWeight: isSelected ? 600 : 500,
-      color: isSelected ? '#667eea' : '#333',
-      background: isSelected ? 'rgba(102, 126, 234, 0.1)' : 'transparent',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      transition: 'all 0.2s ease',
-      borderBottom: '1px solid #f0f0f0'
-    };
-  };
+  if (loading) {
+    return (
+      <div style={buttonStyles}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Users size={16} />
+          <span>Carregando...</span>
+        </div>
+        <ChevronDown size={16} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={buttonStyles}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Users size={16} />
+          <span>Erro ao carregar</span>
+        </div>
+        <ChevronDown size={16} />
+      </div>
+    );
+  }
+
+  if (families.length === 0) {
+    return (
+      <div style={buttonStyles}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Users size={16} />
+          <span>Nenhuma família</span>
+        </div>
+        <ChevronDown size={16} />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ position: 'relative', minWidth: 200 }}>
+    <>
       <button
         ref={buttonRef}
         onClick={handleButtonClick}
-        disabled={disabled}
-        style={getButtonStyles()}
-        onMouseEnter={(e) => {
-          if (!disabled && variant === 'header') {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
-          } else if (!disabled) {
-            e.currentTarget.style.background = '#f8f9fa';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!disabled && variant === 'header') {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.9)';
-          } else if (!disabled) {
-            e.currentTarget.style.background = '#fff';
-          }
-        }}
+        style={buttonStyles}
+        disabled={loading}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-          <Users size={16} style={{ color: variant === 'header' ? '#667eea' : '#666' }} />
-          <span style={{ 
-            overflow: 'hidden', 
-            textOverflow: 'ellipsis', 
-            whiteSpace: 'nowrap',
-            color: variant === 'header' ? '#222' : undefined
-          }}>
-            {selectedFamily ? selectedFamily.name : placeholder}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Users size={16} />
+          <span>{selectedFamily ? selectedFamily.name : 'Selecione uma família'}</span>
         </div>
-        <ChevronDown 
-          size={16} 
-          style={{ 
-            color: variant === 'header' ? '#667eea' : '#666',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease'
-          }} 
-        />
+        <ChevronDown size={16} />
       </button>
 
       {isOpen && buttonRect && createPortal(
-        <div
-          ref={dropdownRef}
-          style={{
-            ...getDropdownStyles(),
-            position: 'fixed',
-            top: buttonRect.bottom + 4,
-            left: buttonRect.left,
-            width: buttonRect.width
-          }}
-        >
+        <div ref={dropdownRef} style={dropdownStyles}>
           {families.map((family) => (
             <div
               key={family.id}
               onClick={() => handleSelect(family.id)}
-              style={getOptionStyles(family.id === selectedFamilyId)}
+              style={{
+                padding: '12px 16px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: family.id === families[families.length - 1].id ? 'none' : '1px solid #f1f5f9',
+                background: family.id === selectedFamilyId ? '#f8fafc' : 'white',
+                transition: 'background 0.2s'
+              }}
               onMouseEnter={(e) => {
                 if (family.id !== selectedFamilyId) {
-                  e.currentTarget.style.background = variant === 'header' 
-                    ? 'rgba(102, 126, 234, 0.05)' 
-                    : '#f8f9fa';
+                  e.currentTarget.style.background = '#f8fafc';
                 }
               }}
               onMouseLeave={(e) => {
                 if (family.id !== selectedFamilyId) {
-                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.background = 'white';
                 }
               }}
             >
-              <Users size={14} style={{ color: '#667eea' }} />
-              <span style={{ flex: 1 }}>{family.name}</span>
+              <span style={{
+                fontSize: 14,
+                color: family.id === selectedFamilyId ? '#3b82f6' : '#222',
+                fontWeight: family.id === selectedFamilyId ? '600' : '500'
+              }}>
+                {family.name}
+              </span>
               {family.id === selectedFamilyId && (
-                <Check size={14} style={{ color: '#667eea' }} />
+                <Check size={16} color="#3b82f6" />
               )}
             </div>
           ))}
         </div>,
         document.body
       )}
-    </div>
+    </>
   );
 } 

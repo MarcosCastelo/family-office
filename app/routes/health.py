@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify
 from app.config.extensions import db
+from datetime import datetime
 
 health_bp = Blueprint('health', __name__)
 
@@ -8,7 +9,7 @@ def health_check():
     """Health check endpoint for Railway and Docker"""
     try:
         # Test database connection
-        db.session.execute('SELECT 1')
+        db.session.execute(db.text('SELECT 1'))
         db_status = 'healthy'
     except Exception as e:
         db_status = f'unhealthy: {str(e)}'
@@ -16,5 +17,5 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'database': db_status,
-        'timestamp': db.func.now()
+        'timestamp': datetime.now().isoformat()
     }), 200 

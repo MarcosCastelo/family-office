@@ -10,17 +10,19 @@ def make_csv_content(family_id):
     )
 
 def test_upload_csv_success(client, headers, family):
+    """Test successful CSV upload"""
     data = {
         'file': (io.BytesIO(make_csv_content(family.id).encode()), 'ativos.csv')
     }
     response = client.post('/assets/upload', content_type='multipart/form-data', headers=headers, data=data)
     assert response.status_code == 201
-    assert isinstance(response.json, list)
-    assert len(response.json) == 2
-    assert response.json[0]["name"] == "Tesouro Selic"
-    assert response.json[1]["asset_type"] == "renda_variavel"
+    assert isinstance(response.get_json(), list)
+    assert len(response.get_json()) == 2
+    assert response.get_json()[0]["name"] == "Tesouro Selic"
+    assert response.get_json()[1]["asset_type"] == "renda_variavel"
 
 def test_upload_csv_invalid_format(client, headers, family):
+    """Test CSV upload with invalid format"""
     data = {
         'file': (io.BytesIO(b"nome,valor\nfoo,bar\n"), 'ativos.csv')
     }
@@ -28,6 +30,7 @@ def test_upload_csv_invalid_format(client, headers, family):
     assert response.status_code == 400
 
 def test_upload_csv_unauthenticated(client, family):
+    """Test CSV upload without authentication"""
     data = {
         'file': (io.BytesIO(make_csv_content(family.id).encode()), 'ativos.csv')
     }
@@ -35,6 +38,7 @@ def test_upload_csv_unauthenticated(client, family):
     assert response.status_code == 401
 
 def test_upload_csv_missing_family(client, headers):
+    """Test CSV upload with missing family_id"""
     # family_id ausente
     csv = (
         "name,asset_type,value,acquisition_date,details\n"
@@ -47,6 +51,7 @@ def test_upload_csv_missing_family(client, headers):
     assert response.status_code == 400 
 
 def make_xlsx_content(family_id):
+    """Create test XLSX content"""
     import openpyxl
     from tempfile import NamedTemporaryFile
     wb = openpyxl.Workbook()
@@ -60,17 +65,19 @@ def make_xlsx_content(family_id):
         return tmp.read()
 
 def test_upload_xlsx_success(client, headers, family):
+    """Test successful XLSX upload"""
     data = {
         'file': (io.BytesIO(make_xlsx_content(family.id)), 'ativos.xlsx')
     }
     response = client.post('/assets/upload', content_type='multipart/form-data', headers=headers, data=data)
     assert response.status_code == 201
-    assert isinstance(response.json, list)
-    assert len(response.json) == 2
-    assert response.json[0]["name"] == "Tesouro Selic"
-    assert response.json[1]["asset_type"] == "renda_variavel"
+    assert isinstance(response.get_json(), list)
+    assert len(response.get_json()) == 2
+    assert response.get_json()[0]["name"] == "Tesouro Selic"
+    assert response.get_json()[1]["asset_type"] == "renda_variavel"
 
 def test_upload_xlsx_invalid_format(client, headers, family):
+    """Test XLSX upload with invalid format"""
     data = {
         'file': (io.BytesIO(b"not an excel file"), 'ativos.xlsx')
     }
@@ -78,6 +85,7 @@ def test_upload_xlsx_invalid_format(client, headers, family):
     assert response.status_code == 400
 
 def test_upload_xlsx_unauthenticated(client, family):
+    """Test XLSX upload without authentication"""
     data = {
         'file': (io.BytesIO(make_xlsx_content(family.id)), 'ativos.xlsx')
     }
@@ -85,24 +93,32 @@ def test_upload_xlsx_unauthenticated(client, family):
     assert response.status_code == 401 
 
 def test_upload_csv_real_file(client, headers):
-    with open('ativos_exemplo.csv', 'rb') as f:
-        data = {'file': (f, 'ativos_exemplo.csv')}
-        response = client.post('/assets/upload', content_type='multipart/form-data', headers=headers, data=data)
-        assert response.status_code == 201
-        assert isinstance(response.json, list)
-        assert len(response.json) == 3
-        assert response.json[0]["name"] == "Tesouro Selic"
-        assert response.json[1]["asset_type"] == "renda_variavel"
+    """Test upload using real CSV file"""
+    try:
+        with open('ativos_exemplo.csv', 'rb') as f:
+            data = {'file': (f, 'ativos_exemplo.csv')}
+            response = client.post('/assets/upload', content_type='multipart/form-data', headers=headers, data=data)
+            assert response.status_code == 201
+            assert isinstance(response.get_json(), list)
+            assert len(response.get_json()) == 3
+            assert response.get_json()[0]["name"] == "Tesouro Selic"
+            assert response.get_json()[1]["asset_type"] == "renda_variavel"
+    except FileNotFoundError:
+        pytest.skip("ativos_exemplo.csv file not found")
 
 def test_upload_xlsx_real_file(client, headers):
-    with open('ativos_exemplo.xlsx', 'rb') as f:
-        data = {'file': (f, 'ativos_exemplo.xlsx')}
-        response = client.post('/assets/upload', content_type='multipart/form-data', headers=headers, data=data)
-        assert response.status_code == 201
-        assert isinstance(response.json, list)
-        assert len(response.json) == 3
-        assert response.json[0]["name"] == "Tesouro Selic"
-        assert response.json[1]["asset_type"] == "renda_variavel" 
+    """Test upload using real XLSX file"""
+    try:
+        with open('ativos_exemplo.xlsx', 'rb') as f:
+            data = {'file': (f, 'ativos_exemplo.xlsx')}
+            response = client.post('/assets/upload', content_type='multipart/form-data', headers=headers, data=data)
+            assert response.status_code == 201
+            assert isinstance(response.get_json(), list)
+            assert len(response.get_json()) == 3
+            assert response.get_json()[0]["name"] == "Tesouro Selic"
+            assert response.get_json()[1]["asset_type"] == "renda_variavel"
+    except FileNotFoundError:
+        pytest.skip("ativos_exemplo.xlsx file not found")
 
 def test_upload_csv_invalid_line_rejects_all(client, headers, family):
     import io

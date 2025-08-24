@@ -115,7 +115,7 @@ def seed_alerts(families):
             Alert,
             family_id=fam.id,
             tipo="risco",
-            mensagem="Exemplo de alerta de risco",
+            mensagem="Alerta inicial",
             severidade="warning"
         )
     print(f"Alertas de exemplo criados para cada família.")

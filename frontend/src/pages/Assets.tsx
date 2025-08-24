@@ -71,17 +71,26 @@ export default function Assets() {
       setLoading(true);
       setError(null);
 
+      // Preparar dados do ativo
       const assetData = {
-        ...formData,
+        name: formData.name,
+        asset_type: formData.asset_type,
         value: parseFloat(formData.value),
+        acquisition_date: formData.acquisition_date,
         family_id: selectedFamilyId,
         details: {
           ...formData.details,
-          ...(formData.asset_type === 'renda_variavel' && formData.ticker ? { ticker: formData.ticker } : {})
+          // Adicionar ticker para renda variável
+          ...(formData.asset_type === 'renda_variavel' && formData.ticker ? { ticker: formData.ticker } : {}),
+          // Adicionar outros campos específicos por tipo de ativo
+          ...(formData.asset_type === 'renda_fixa' && {
+            indexador: (formData.details as any)?.indexador || 'CDI',
+            vencimento: (formData.details as any)?.vencimento || new Date().toISOString().split('T')[0]
+          })
         }
       };
 
-      if (editingAsset) {
+      if (editingAsset && editingAsset.id) {
         await updateAsset(editingAsset.id, assetData, selectedFamilyId);
       } else {
         await createAsset(assetData);
@@ -124,8 +133,8 @@ export default function Assets() {
     setFormData({
       name: asset.name,
       asset_type: asset.asset_type,
-      value: asset.value.toString(),
-      acquisition_date: asset.acquisition_date,
+      value: (asset.value || 0).toString(),
+      acquisition_date: asset.acquisition_date || '',
       details: asset.details,
       ticker: asset.details?.ticker || ''
     });
@@ -696,7 +705,7 @@ export default function Assets() {
                   </button>
                   
                   <button
-                    onClick={() => handleDelete(asset.id)}
+                    onClick={() => asset.id && handleDelete(asset.id)}
                     style={{
                       padding: '6px',
                       borderRadius: 6,

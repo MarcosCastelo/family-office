@@ -6,8 +6,10 @@ class Family(db.Model):
     name = db.Column(db.String(100), nullable=False)
     cash_balance = db.Column(db.Float, default=0.0, nullable=False)  # Saldo disponível para investimentos
     
+    # Relationships
     users = db.relationship("User", secondary="user_family", back_populates="families")
     assets = db.relationship("Asset", back_populates="family", cascade="all, delete-orphan")
+    suitability_profiles = db.relationship("SuitabilityProfile", back_populates="family", cascade="all, delete-orphan")
     
     @property
     def total_invested(self):

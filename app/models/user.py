@@ -18,8 +18,10 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     active = db.Column(db.Boolean, default=True)
     
-    families = db.relationship("Family", secondary=user_family, back_populates="users")
-    permissions = db.relationship("Permission", secondary=user_permission, back_populates="users")
+    # Relationships - using strings to avoid circular imports
+    families = db.relationship("Family", secondary="user_family", back_populates="users")
+    permissions = db.relationship("Permission", secondary="user_permission", back_populates="users")
+    suitability_profiles = db.relationship("SuitabilityProfile", back_populates="user", cascade="all, delete-orphan")
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

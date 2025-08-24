@@ -60,6 +60,7 @@ def dashboard_controller(req):
     score_risco = {"score_global": 23, "classificacao_final": "médio"}
     return jsonify({
         "patrimonio_total": patrimonio_total,
+        "valor_total": patrimonio_total,  # Campo adicional para compatibilidade com testes
         "patrimonio_investido": patrimonio_investido,
         "patrimonio_nao_investido": patrimonio_nao_investido,
         "percentual_investido": round((patrimonio_investido / patrimonio_total * 100) if patrimonio_total > 0 else 0, 2),

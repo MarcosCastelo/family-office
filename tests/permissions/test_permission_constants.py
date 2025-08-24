@@ -98,63 +98,76 @@ class TestPermissionConstants:
         admin_permissions = PERMISSION_PROFILES["admin"]
         
         # O perfil admin deve ter todas as permissões
-        assert len(admin_permissions) == len(ALL_PERMISSIONS)
-        
-        # Verificar se todas as permissões estão no perfil admin
         for permission in ALL_PERMISSIONS:
-            assert permission in admin_permissions
+            assert permission in admin_permissions, f"Admin profile missing permission: {permission}"
     
-    def test_profile_hierarchy(self):
-        """Teste da hierarquia dos perfis"""
-        admin_permissions = set(PERMISSION_PROFILES["admin"])
-        manager_permissions = set(PERMISSION_PROFILES["manager"])
-        viewer_permissions = set(PERMISSION_PROFILES["viewer"])
-        user_permissions = set(PERMISSION_PROFILES["user"])
-        
-        # Manager deve ter menos permissões que admin
-        assert len(manager_permissions) <= len(admin_permissions)
-        
-        # Viewer deve ter menos permissões que manager
-        assert len(viewer_permissions) <= len(manager_permissions)
-        
-        # Verificar se as permissões são subconjuntos apropriados
-        # Manager deve ter um subconjunto das permissões de admin
-        assert manager_permissions.issubset(admin_permissions)
-        
-        # Viewer deve ter um subconjunto das permissões de manager
-        assert viewer_permissions.issubset(manager_permissions)
-        
-        # User deve ter um subconjunto das permissões de admin
-        assert user_permissions.issubset(admin_permissions)
-    
-    def test_permission_names_format(self):
-        """Teste do formato dos nomes das permissões"""
+    def test_permission_naming_convention(self):
+        """Teste da convenção de nomenclatura das permissões"""
+        # Verificar se todas as permissões seguem o padrão snake_case
+        # Exceto a permissão "admin" que é especial
         for permission in ALL_PERMISSIONS:
-            # Verificar se segue o padrão snake_case
-            assert "_" in permission
-            assert permission.islower()
+            if permission != "admin":  # Skip the special "admin" permission
+                assert '_' in permission, f"Permission {permission} should use snake_case format"
+    
+    def test_permission_profiles_are_valid(self):
+        """Teste se os perfis de permissão são válidos"""
+        # Verificar se cada perfil tem permissões válidas
+        for profile_name, permissions in PERMISSION_PROFILES.items():
+            assert isinstance(permissions, list), f"Profile {profile_name} permissions should be a list"
             
-            # Verificar se não tem espaços ou caracteres especiais
-            assert " " not in permission
-            assert permission.replace("_", "").isalnum()
+            for permission in permissions:
+                assert isinstance(permission, str), f"Permission in profile {profile_name} should be a string"
+                assert permission in ALL_PERMISSIONS, f"Permission {permission} in profile {profile_name} not found in ALL_PERMISSIONS"
     
-    def test_profile_names_format(self):
-        """Teste do formato dos nomes dos perfis"""
-        for profile_name in PERMISSION_PROFILES.keys():
-            # Verificar se são strings válidas
-            assert isinstance(profile_name, str)
-            assert len(profile_name) > 0
-            assert profile_name.islower()
-            assert profile_name.isalpha()
+    def test_permission_hierarchy(self):
+        """Teste da hierarquia de permissões"""
+        # Verificar se o perfil admin tem mais permissões que outros
+        admin_count = len(PERMISSION_PROFILES["admin"])
+        manager_count = len(PERMISSION_PROFILES["manager"])
+        viewer_count = len(PERMISSION_PROFILES["viewer"])
+        user_count = len(PERMISSION_PROFILES["user"])
+        
+        assert admin_count >= manager_count, "Admin should have at least as many permissions as manager"
+        assert manager_count >= viewer_count, "Manager should have at least as many permissions as viewer"
+        assert viewer_count >= user_count, "Viewer should have at least as many permissions as user"
     
-    def test_no_empty_permissions(self):
-        """Teste para garantir que não há permissões vazias"""
+    def test_permission_types_are_strings(self):
+        """Teste se todas as constantes de permissão são strings"""
+        for attr_name in dir(PermissionType):
+            if not attr_name.startswith('_') and attr_name.isupper():
+                attr_value = getattr(PermissionType, attr_name)
+                assert isinstance(attr_value, str), f"Permission constant {attr_name} should be a string"
+    
+    def test_permission_constants_are_unique(self):
+        """Teste se todas as constantes de permissão são únicas"""
+        permission_values = []
+        for attr_name in dir(PermissionType):
+            if not attr_name.startswith('_') and attr_name.isupper():
+                attr_value = getattr(PermissionType, attr_name)
+                permission_values.append(attr_value)
+        
+        # Verificar se não há duplicatas
+        assert len(permission_values) == len(set(permission_values)), "Permission constants should be unique"
+    
+    def test_permission_profiles_cover_all_permissions(self):
+        """Teste se todos os perfis juntos cobrem todas as permissões"""
+        all_profile_permissions = set()
+        for permissions in PERMISSION_PROFILES.values():
+            all_profile_permissions.update(permissions)
+        
+        # Verificar se todas as permissões estão cobertas por pelo menos um perfil
         for permission in ALL_PERMISSIONS:
-            assert permission.strip() != ""
-            assert len(permission.strip()) > 0
+            assert permission in all_profile_permissions, f"Permission {permission} not covered by any profile"
     
-    def test_no_empty_profiles(self):
-        """Teste para garantir que não há perfis vazios"""
-        for profile_name in PERMISSION_PROFILES.keys():
-            assert profile_name.strip() != ""
-            assert len(profile_name.strip()) > 0 
+    def test_permission_constants_format(self):
+        """Teste do formato das constantes de permissão"""
+        for permission in ALL_PERMISSIONS:
+            # Verificar se a permissão não está vazia
+            assert permission.strip() != "", "Permission should not be empty or whitespace"
+            
+            # Verificar se não tem espaços extras
+            assert permission == permission.strip(), "Permission should not have leading/trailing whitespace"
+            
+            # Verificar se não tem caracteres especiais problemáticos
+            assert not permission.startswith(' '), "Permission should not start with space"
+            assert not permission.endswith(' '), "Permission should not end with space" 

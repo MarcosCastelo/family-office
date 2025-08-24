@@ -26,6 +26,11 @@ class PermissionType:
     REPORT_GENERATE = "report_generate"
     REPORT_EXPORT = "report_export"
     
+    # Permissões de análise de risco
+    RISK_VIEW = "risk_view"
+    RISK_ANALYSIS = "risk_analysis"
+    RISK_UPDATE = "risk_update"
+    
     # Permissões administrativas
     ADMIN = "admin"
     ADMIN_USERS = "admin_users"
@@ -51,6 +56,9 @@ ALL_PERMISSIONS = [
     PermissionType.REPORT_VIEW,
     PermissionType.REPORT_GENERATE,
     PermissionType.REPORT_EXPORT,
+    PermissionType.RISK_VIEW,
+    PermissionType.RISK_ANALYSIS,
+    PermissionType.RISK_UPDATE,
     PermissionType.ADMIN,
     PermissionType.ADMIN_USERS,
     PermissionType.ADMIN_PERMISSIONS,
@@ -77,12 +85,17 @@ PERMISSION_PROFILES = {
     "viewer": [
         PermissionType.FAMILY_VIEW,
         PermissionType.ASSET_VIEW,
+        PermissionType.ASSET_CREATE,
+        PermissionType.ASSET_UPDATE,
+        PermissionType.ASSET_DELETE,
         PermissionType.REPORT_VIEW,
+        PermissionType.RISK_VIEW,
     ],
     "user": [
         PermissionType.ASSET_VIEW,
         PermissionType.ASSET_CREATE,
         PermissionType.ASSET_UPDATE,
         PermissionType.ASSET_DELETE,
+        PermissionType.RISK_VIEW,
     ]
 } 

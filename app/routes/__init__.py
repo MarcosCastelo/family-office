@@ -3,7 +3,16 @@ from flask_jwt_extended import jwt_required
 from flask import Blueprint, request
 from app.decorators.permissions import require_permission
 
+# Import risk analysis routes
+from app.routes.risk_analysis import risk_analysis_bp
+
 dashboard_bp = Blueprint("dashboard", __name__)
+
+# Rota de teste direta para verificar se o problema é de blueprint
+@dashboard_bp.route("/risk-test", methods=["GET"])
+def risk_test():
+    """Teste direto para verificar se as rotas de risco funcionam"""
+    return {"message": "Rota de teste funcionando!", "status": "success"}, 200
 
 @dashboard_bp.route("/dashboard", methods=["GET"])
 @jwt_required()

@@ -1,52 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { getFamilyRiskSummary, getAssetRisk, triggerRiskRecalculation } from '../services/risk';
-import { getAssets } from '../services/assets';
-import { getUserFamilies } from '../services/family';
-import type { RiskSummary, AssetRisk } from '../services/risk';
-import type { Asset } from '../services/assets';
-
-interface Family {
-  id: number;
-  name: string;
-}
+import { 
+  BarChart3, 
+  AlertTriangle, 
+  TrendingUp, 
+  Shield, 
+  RefreshCw,
+  Eye,
+  Activity,
+  PieChart,
+  DollarSign,
+  Users,
+  Clock
+} from 'lucide-react';
+import { 
+  getPortfolioRiskAnalysis, 
+  getAssetRiskMetrics, 
+  updateAssetQuotes,
+  getMarketOverview,
+  getRiskAlerts,
+  type PortfolioRiskAnalysis,
+  type RiskMetrics,
+  type MarketOverview,
+  type RiskAlert,
+  calculateRiskColor,
+  getRiskLabel,
+  formatCurrency,
+  formatPercentage,
+  formatNumber
+} from '../services/riskAnalysis';
+import { useFamily } from '../contexts/FamilyContext';
+import { useToast } from '../components/Toast';
 
 export default function RiskAnalysis() {
-  const [families, setFamilies] = useState<Family[]>([]);
-  const [selectedFamilyId, setSelectedFamilyId] = useState<number | null>(null);
-  const [riskSummary, setRiskSummary] = useState<RiskSummary | null>(null);
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [assetRisks, setAssetRisks] = useState<AssetRisk[]>([]);
+  const { selectedFamilyId } = useFamily();
+  const { showToast } = useToast();
+  
+  const [portfolioRisk, setPortfolioRisk] = useState<PortfolioRiskAnalysis | null>(null);
+  const [marketOverview, setMarketOverview] = useState<MarketOverview | null>(null);
+  const [riskAlerts, setRiskAlerts] = useState<RiskAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [recalculating, setRecalculating] = useState(false);
-
-  useEffect(() => {
-    loadFamilies();
-  }, []);
+  const [updatingQuotes, setUpdatingQuotes] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (selectedFamilyId) {
       loadRiskData();
     }
   }, [selectedFamilyId]);
-
-  const loadFamilies = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const familiesData = await getUserFamilies();
-      setFamilies(familiesData);
-      
-      if (familiesData.length > 0) {
-        setSelectedFamilyId(familiesData[0].id);
-      }
-    } catch (err: any) {
-      console.error('Erro ao carregar famílias:', err);
-      setError(err.response?.data?.error || 'Erro ao carregar famílias');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadRiskData = async () => {
     if (!selectedFamilyId) return;
@@ -55,362 +56,587 @@ export default function RiskAnalysis() {
       setLoading(true);
       setError(null);
       
-      // Carregar resumo de risco e ativos em paralelo
-      const [riskData, assetsData] = await Promise.all([
-        getFamilyRiskSummary(selectedFamilyId),
-        getAssets(selectedFamilyId)
+      // Carregar dados em paralelo
+      const [riskData, overviewData, alertsData] = await Promise.all([
+        getPortfolioRiskAnalysis(selectedFamilyId),
+        getMarketOverview(selectedFamilyId),
+        getRiskAlerts(selectedFamilyId)
       ]);
       
-      setRiskSummary(riskData);
-      setAssets(assetsData);
-      
-      // Carregar risco individual de cada ativo
-      const assetRiskPromises = assetsData.map((asset: Asset) => 
-        getAssetRisk(asset.id!, selectedFamilyId)
-      );
-      const assetRisksData = await Promise.all(assetRiskPromises);
-      setAssetRisks(assetRisksData);
+      setPortfolioRisk(riskData);
+      setMarketOverview(overviewData);
+      setRiskAlerts(alertsData);
+      setLastUpdate(new Date());
       
     } catch (err: any) {
       console.error('Erro ao carregar dados de risco:', err);
       setError(err.response?.data?.error || 'Erro ao carregar dados de risco');
+      showToast('Erro ao carregar análise de risco', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRecalculateRisk = async () => {
+  const handleUpdateQuotes = async () => {
     if (!selectedFamilyId) return;
     
     try {
-      setRecalculating(true);
-      await triggerRiskRecalculation(selectedFamilyId);
-      await loadRiskData(); // Recarrega os dados após recálculo
-      alert('Análise de risco recalculada com sucesso!');
+      setUpdatingQuotes(true);
+      const result = await updateAssetQuotes(selectedFamilyId);
+      
+      showToast(result.message, 'success');
+      
+      // Recarregar dados após atualização
+      await loadRiskData();
+      
     } catch (err: any) {
-      console.error('Erro ao recalculcar risco:', err);
-      alert(err.response?.data?.error || 'Erro ao recalculcar risco');
+      console.error('Erro ao atualizar cotações:', err);
+      showToast('Erro ao atualizar cotações', 'error');
     } finally {
-      setRecalculating(false);
+      setUpdatingQuotes(false);
     }
   };
 
-  const getRiskColor = (classification: string | undefined) => {
-    if (!classification) return '#666';
-    
-    switch (classification.toLowerCase()) {
-      case 'crítico':
-        return '#d32f2f';
-      case 'alto':
-        return '#f57c00';
-      case 'médio':
-        return '#fbc02d';
-      case 'baixo':
-        return '#388e3c';
-      default:
-        return '#666';
+  const getRiskIcon = (riskScore: number) => {
+    if (riskScore <= 25) return <Shield size={20} color="#10b981" />;
+    if (riskScore <= 50) return <AlertTriangle size={20} color="#f59e0b" />;
+    if (riskScore <= 75) return <TrendingUp size={20} color="#f97316" />;
+    return <AlertTriangle size={20} color="#ef4444" />;
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'high': return '#ef4444';
+      case 'medium': return '#f97316';
+      case 'low': return '#f59e0b';
+      default: return '#666';
     }
   };
 
-  const getRiskLabel = (classification: string | undefined) => {
-    if (!classification) return 'Indefinido';
-    
-    switch (classification.toLowerCase()) {
-      case 'crítico':
-        return 'Crítico';
-      case 'alto':
-        return 'Alto';
-      case 'médio':
-        return 'Médio';
-      case 'baixo':
-        return 'Baixo';
-      default:
-        return classification;
-    }
-  };
-
-  if (loading && !selectedFamilyId) {
+  if (!selectedFamilyId) {
     return (
-      <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>
-        Carregando famílias...
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '400px',
+        color: '#666'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <Users size={48} style={{ marginBottom: 16, opacity: 0.6 }} />
+          <div>Selecione uma família para analisar o risco.</div>
+        </div>
       </div>
     );
   }
 
-  if (error && !selectedFamilyId) {
+  if (loading) {
     return (
-      <div style={{ padding: 24, textAlign: 'center', color: '#d32f2f' }}>
-        Erro: {error}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '400px',
+        color: '#666'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <RefreshCw size={48} style={{ marginBottom: 16, opacity: 0.6 }} className="animate-spin" />
+          <div>Carregando análise de risco...</div>
+        </div>
       </div>
     );
   }
 
-  if (families.length === 0) {
+  if (error) {
     return (
-      <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>
-        Você não tem acesso a nenhuma família.
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '400px',
+        color: '#ef4444'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <AlertTriangle size={48} style={{ marginBottom: 16 }} />
+          <div>Erro: {error}</div>
+          <button 
+            onClick={loadRiskData}
+            style={{
+              marginTop: 16,
+              padding: '8px 16px',
+              background: '#ef4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            Tentar Novamente
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h1 style={{ color: '#222', margin: 0 }}>Análise de Risco</h1>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Seletor de Família */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <label style={{ color: '#666', fontSize: 14 }}>Família:</label>
-            <select 
-              value={selectedFamilyId || ''} 
-              onChange={(e) => setSelectedFamilyId(Number(e.target.value))}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 8,
-                border: '1px solid #ccc',
-                fontSize: 14,
-                background: '#fff'
-              }}
-            >
-              {families.map((family) => (
-                <option key={family.id} value={family.id}>
-                  {family.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Botão Recalcular */}
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: 16
+        }}>
+          <h1 style={{ 
+            color: '#222', 
+            marginBottom: 16, 
+            fontSize: '28px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12
+          }}>
+            <Shield size={28} />
+            Análise de Risco
+          </h1>
+          
           <button
-            onClick={handleRecalculateRisk}
-            disabled={recalculating}
+            onClick={handleUpdateQuotes}
+            disabled={updatingQuotes}
             style={{
-              padding: '8px 16px',
-              borderRadius: 8,
-              background: recalculating ? '#ccc' : 'linear-gradient(90deg, #4caf50 0%, #45a049 100%)',
-              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              background: '#667eea',
+              color: 'white',
               border: 'none',
-              cursor: recalculating ? 'not-allowed' : 'pointer',
-              fontSize: 14,
-              fontWeight: 500
+              borderRadius: '8px',
+              cursor: updatingQuotes ? 'not-allowed' : 'pointer',
+              opacity: updatingQuotes ? 0.6 : 1
             }}
           >
-            {recalculating ? 'Recalculando...' : 'Recalcular Risco'}
+            <RefreshCw size={16} className={updatingQuotes ? 'animate-spin' : ''} />
+            {updatingQuotes ? 'Atualizando...' : 'Atualizar Cotações'}
           </button>
         </div>
+        
+        {lastUpdate && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 8, 
+            color: '#666',
+            fontSize: '14px'
+          }}>
+            <Clock size={16} />
+            Última atualização: {lastUpdate.toLocaleString('pt-BR')}
+          </div>
+        )}
       </div>
 
-      {loading && selectedFamilyId ? (
-        <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>
-          Carregando análise de risco...
-        </div>
-      ) : error && selectedFamilyId ? (
-        <div style={{ padding: 24, textAlign: 'center', color: '#d32f2f' }}>
-          Erro: {error}
-        </div>
-      ) : riskSummary ? (
-        <>
-          {/* Resumo de Risco */}
-          <div style={{
-            background: '#fff',
-            borderRadius: 16,
-            padding: 24,
-            marginBottom: 24,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.08)'
+      {/* Resumo de Risco da Carteira */}
+      {portfolioRisk && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ 
+            color: '#333', 
+            marginBottom: 16, 
+            fontSize: '20px',
+            fontWeight: 600
           }}>
-            <h2 style={{ color: '#222', marginBottom: 20 }}>Resumo de Risco da Família</h2>
+            Resumo de Risco da Carteira
+          </h2>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: 16
+          }}>
+            <div style={{
+              padding: '20px',
+              background: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: '#222' }}>
+                {formatCurrency(portfolioRisk.total_portfolio_value)}
+              </div>
+              <div style={{ color: '#666', fontSize: '14px' }}>Valor Total</div>
+            </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
-              {/* Score Global */}
-              <div style={{
-                background: `linear-gradient(135deg, ${getRiskColor(riskSummary.classificacao_final)}20 0%, ${getRiskColor(riskSummary.classificacao_final)}10 100%)`,
-                borderRadius: 12,
-                padding: 20,
-                border: `2px solid ${getRiskColor(riskSummary.classificacao_final)}`
+            <div style={{
+              padding: '20px',
+              background: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: '#222' }}>
+                {portfolioRisk.number_of_assets}
+              </div>
+              <div style={{ color: '#666', fontSize: '14px' }}>Total de Ativos</div>
+            </div>
+            
+            <div style={{
+              padding: '20px',
+              background: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              textAlign: 'center'
+            }}>
+              <div style={{ 
+                fontSize: '24px', 
+                fontWeight: '700', 
+                color: calculateRiskColor(portfolioRisk.weighted_risk_score)
               }}>
-                <h3 style={{ color: '#222', marginBottom: 8, fontSize: 16 }}>Score Global</h3>
-                <div style={{ fontSize: 32, fontWeight: 'bold', color: getRiskColor(riskSummary.classificacao_final) }}>
-                  {riskSummary.score_global}
-                </div>
-                <div style={{ 
-                  color: getRiskColor(riskSummary.classificacao_final), 
-                  fontWeight: 600,
-                  fontSize: 14 
+                {portfolioRisk.weighted_risk_score.toFixed(1)}
+              </div>
+              <div style={{ color: '#666', fontSize: '14px' }}>Score de Risco</div>
+            </div>
+            
+            <div style={{
+              padding: '20px',
+              background: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              textAlign: 'center'
+            }}>
+              <div style={{ 
+                fontSize: '24px', 
+                fontWeight: '700', 
+                color: calculateRiskColor(portfolioRisk.weighted_risk_score)
+              }}>
+                {portfolioRisk.risk_classification}
+              </div>
+              <div style={{ color: '#666', fontSize: '14px' }}>Classificação</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visão Geral do Mercado */}
+      {marketOverview && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ 
+            color: '#333', 
+            marginBottom: 16, 
+            fontSize: '20px',
+            fontWeight: 600
+          }}>
+            Visão Geral do Mercado
+          </h2>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 16
+          }}>
+            {/* Distribuição por Tipo de Ativo */}
+            <div style={{
+              padding: '20px',
+              background: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h3 style={{ 
+                color: '#333', 
+                marginBottom: 16, 
+                fontSize: '16px',
+                fontWeight: 600
+              }}>
+                Distribuição por Tipo
+              </h3>
+              
+              {Object.entries(marketOverview.asset_types).map(([type, data]) => (
+                <div key={type} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 0',
+                  borderBottom: '1px solid #f1f5f9'
                 }}>
-                  {getRiskLabel(riskSummary.classificacao_final)}
+                  <span style={{ color: '#666', textTransform: 'capitalize' }}>
+                    {type.replace('_', ' ')}
+                  </span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: '600', color: '#222' }}>
+                      {formatCurrency(data.total_value)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {data.percentage.toFixed(1)}%
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              {/* Concentração */}
-              <div style={{
-                background: '#f5f5f5',
-                borderRadius: 12,
-                padding: 20
+              ))}
+            </div>
+            
+            {/* Análise de Concentração */}
+            <div style={{
+              padding: '20px',
+              background: 'white',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h3 style={{ 
+                color: '#333', 
+                marginBottom: 16, 
+                fontSize: '16px',
+                fontWeight: 600
               }}>
-                <h3 style={{ color: '#222', marginBottom: 8, fontSize: 16 }}>Concentração</h3>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#222' }}>
-                  {riskSummary.concentracao}%
+                Análise de Concentração
+              </h3>
+              
+              <div style={{ marginBottom: 16 }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 8
+                }}>
+                  <span style={{ color: '#10b981' }}>Bem Diversificada</span>
+                  <span style={{ fontWeight: '600' }}>{marketOverview.concentration_analysis.well_diversified}</span>
                 </div>
-                <div style={{ color: '#666', fontSize: 12 }}>
-                  Maior ativo / Total
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 8
+                }}>
+                  <span style={{ color: '#f59e0b' }}>Moderadamente Concentrada</span>
+                  <span style={{ fontWeight: '600' }}>{marketOverview.concentration_analysis.moderately_concentrated}</span>
                 </div>
-              </div>
-
-              {/* Volatilidade */}
-              <div style={{
-                background: '#f5f5f5',
-                borderRadius: 12,
-                padding: 20
-              }}>
-                <h3 style={{ color: '#222', marginBottom: 8, fontSize: 16 }}>Volatilidade</h3>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#222' }}>
-                  {riskSummary.volatilidade}%
-                </div>
-                <div style={{ color: '#666', fontSize: 12 }}>
-                  % Renda Variável
-                </div>
-              </div>
-
-              {/* Liquidez */}
-              <div style={{
-                background: '#f5f5f5',
-                borderRadius: 12,
-                padding: 20
-              }}>
-                <h3 style={{ color: '#222', marginBottom: 8, fontSize: 16 }}>Liquidez</h3>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#222' }}>
-                  {riskSummary.liquidez_aggregada}%
-                </div>
-                <div style={{ color: '#666', fontSize: 12 }}>
-                  Ativos Ilíquidos
-                </div>
-              </div>
-
-              {/* Exposição Cambial */}
-              <div style={{
-                background: '#f5f5f5',
-                borderRadius: 12,
-                padding: 20
-              }}>
-                <h3 style={{ color: '#222', marginBottom: 8, fontSize: 16 }}>Exposição Cambial</h3>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#222' }}>
-                  {riskSummary.exposicao_cambial}%
-                </div>
-                <div style={{ color: '#666', fontSize: 12 }}>
-                  % Ativos em Moeda Estrangeira
-                </div>
-              </div>
-
-              {/* Risco Fiscal/Regulatório */}
-              <div style={{
-                background: '#f5f5f5',
-                borderRadius: 12,
-                padding: 20
-              }}>
-                <h3 style={{ color: '#222', marginBottom: 8, fontSize: 16 }}>Risco Fiscal</h3>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#222' }}>
-                  {riskSummary.risco_fiscal_regulatorio}%
-                </div>
-                <div style={{ color: '#666', fontSize: 12 }}>
-                  Regulatório
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ color: '#ef4444' }}>Altamente Concentrada</span>
+                  <span style={{ fontWeight: '600' }}>{marketOverview.concentration_analysis.highly_concentrated}</span>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Análise Individual por Ativo */}
-          <div style={{
-            background: '#fff',
-            borderRadius: 16,
-            padding: 24,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.08)'
+      {/* Alertas de Risco */}
+      {riskAlerts.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ 
+            color: '#333', 
+            marginBottom: 16, 
+            fontSize: '20px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
           }}>
-            <h2 style={{ color: '#222', marginBottom: 20 }}>Análise Individual por Ativo</h2>
-            
-            {assetRisks.length > 0 ? (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #eee' }}>
-                      <th style={{ textAlign: 'left', padding: '12px 0', color: '#666', fontWeight: 600 }}>Ativo</th>
-                      <th style={{ textAlign: 'center', padding: '12px 0', color: '#666', fontWeight: 600 }}>Risco de Mercado</th>
-                      <th style={{ textAlign: 'center', padding: '12px 0', color: '#666', fontWeight: 600 }}>Liquidez</th>
-                      <th style={{ textAlign: 'center', padding: '12px 0', color: '#666', fontWeight: 600 }}>Concentração</th>
-                      <th style={{ textAlign: 'center', padding: '12px 0', color: '#666', fontWeight: 600 }}>Governança</th>
-                      <th style={{ textAlign: 'center', padding: '12px 0', color: '#666', fontWeight: 600 }}>Classificação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assetRisks.map((assetRisk) => (
-                      <tr key={assetRisk.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                        <td style={{ padding: '12px 0', color: '#222' }}>{assetRisk.name}</td>
-                        <td style={{ textAlign: 'center', padding: '12px 0' }}>
-                          <span style={{
-                            padding: '4px 8px',
-                            borderRadius: 4,
-                            fontSize: 12,
-                            fontWeight: 500,
-                            color: getRiskColor(assetRisk.risco_mercado),
-                            background: `${getRiskColor(assetRisk.risco_mercado)}20`
-                          }}>
-                            {getRiskLabel(assetRisk.risco_mercado)}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center', padding: '12px 0' }}>
-                          <span style={{
-                            padding: '4px 8px',
-                            borderRadius: 4,
-                            fontSize: 12,
-                            fontWeight: 500,
-                            color: getRiskColor(assetRisk.risco_liquidez),
-                            background: `${getRiskColor(assetRisk.risco_liquidez)}20`
-                          }}>
-                            {getRiskLabel(assetRisk.risco_liquidez)}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center', padding: '12px 0' }}>
-                          <span style={{
-                            padding: '4px 8px',
-                            borderRadius: 4,
-                            fontSize: 12,
-                            fontWeight: 500,
-                            color: getRiskColor(assetRisk.risco_concentracao),
-                            background: `${getRiskColor(assetRisk.risco_concentracao)}20`
-                          }}>
-                            {getRiskLabel(assetRisk.risco_concentracao)}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'center', padding: '12px 0', color: '#222', fontWeight: 500 }}>
-                          {assetRisk.score_governanca}
-                        </td>
-                        <td style={{ textAlign: 'center', padding: '12px 0' }}>
-                          <span style={{
-                            padding: '6px 12px',
-                            borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: '#fff',
-                            background: getRiskColor(assetRisk.classificacao_final)
-                          }}>
-                            {getRiskLabel(assetRisk.classificacao_final)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <AlertTriangle size={20} color="#ef4444" />
+            Alertas de Risco ({riskAlerts.length})
+          </h2>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+            gap: 16
+          }}>
+            {riskAlerts.map((alert, index) => (
+              <div key={index} style={{
+                padding: '16px',
+                background: 'white',
+                borderRadius: '12px',
+                border: `2px solid ${getSeverityColor(alert.severity)}`,
+                borderLeft: `6px solid ${getSeverityColor(alert.severity)}`
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: 8
+                }}>
+                  <div style={{ fontWeight: '600', color: '#222' }}>
+                    {alert.asset_name}
+                  </div>
+                  <span style={{
+                    padding: '4px 8px',
+                    background: `${getSeverityColor(alert.severity)}20`,
+                    color: getSeverityColor(alert.severity),
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase'
+                  }}>
+                    {alert.severity}
+                  </span>
+                </div>
+                
+                <div style={{ color: '#666', marginBottom: 8 }}>
+                  {alert.message}
+                </div>
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '12px',
+                  color: '#666'
+                }}>
+                  <span>Tipo: {alert.type}</span>
+                  <span>Valor: {alert.value.toFixed(1)}% (Limite: {alert.limit}%)</span>
+                </div>
               </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: '#666' }}>
-                Nenhum ativo encontrado para análise
-              </div>
-            )}
+            ))}
           </div>
-        </>
-      ) : (
-        <div style={{ textAlign: 'center', padding: '24px 0', color: '#666' }}>
-          Selecione uma família para visualizar a análise de risco
+        </div>
+      )}
+
+      {/* Análise Detalhada por Ativo */}
+      {portfolioRisk && portfolioRisk.asset_risks.length > 0 && (
+        <div>
+          <h2 style={{ 
+            color: '#333', 
+            marginBottom: 16, 
+            fontSize: '20px',
+            fontWeight: 600
+          }}>
+            Análise Detalhada por Ativo
+          </h2>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+            gap: 16
+          }}>
+            {portfolioRisk.asset_risks.map((assetRisk) => (
+              <div key={assetRisk.asset_id} style={{
+                padding: '20px',
+                background: 'white',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: 16
+                }}>
+                  <div>
+                    <h3 style={{ 
+                      color: '#222', 
+                      marginBottom: 4, 
+                      fontSize: '16px',
+                      fontWeight: '600'
+                    }}>
+                      {assetRisk.name}
+                    </h3>
+                    <div style={{ 
+                      color: '#666', 
+                      fontSize: '12px',
+                      textTransform: 'capitalize'
+                    }}>
+                      {assetRisk.asset_type.replace('_', ' ')}
+                    </div>
+                  </div>
+                  
+                  {getRiskIcon(assetRisk.risk_metrics.volatility)}
+                </div>
+                
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8
+                  }}>
+                    <span style={{ color: '#666' }}>Valor Atual:</span>
+                    <span style={{ fontWeight: '600' }}>
+                      {formatCurrency(assetRisk.current_value)}
+                    </span>
+                  </div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8
+                  }}>
+                    <span style={{ color: '#666' }}>Preço Atual:</span>
+                    <span style={{ fontWeight: '600' }}>
+                      {formatCurrency(assetRisk.risk_metrics.current_price)}
+                    </span>
+                  </div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8
+                  }}>
+                    <span style={{ color: '#666' }}>Variação 24h:</span>
+                    <span style={{ 
+                      fontWeight: '600',
+                      color: assetRisk.risk_metrics.price_change_24h >= 0 ? '#10b981' : '#ef4444'
+                    }}>
+                      {formatPercentage(assetRisk.risk_metrics.price_change_24h)}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Métricas de Risco */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 12
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '700',
+                      color: calculateRiskColor(assetRisk.risk_metrics.volatility)
+                    }}>
+                      {assetRisk.risk_metrics.volatility.toFixed(1)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>Volatilidade</div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '700',
+                      color: calculateRiskColor(assetRisk.risk_metrics.liquidity_score)
+                    }}>
+                      {assetRisk.risk_metrics.liquidity_score.toFixed(0)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>Liquidez</div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '700',
+                      color: calculateRiskColor(assetRisk.risk_metrics.concentration_risk)
+                    }}>
+                      {assetRisk.risk_metrics.concentration_risk.toFixed(0)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>Concentração</div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '700',
+                      color: calculateRiskColor(assetRisk.risk_metrics.market_risk)
+                    }}>
+                      {assetRisk.risk_metrics.market_risk.toFixed(0)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>Mercado</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

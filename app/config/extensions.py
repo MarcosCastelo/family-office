@@ -5,5 +5,11 @@ from flask_migrate import Migrate
 
 db = SQLAlchemy()
 jwt = JWTManager()
-cors = CORS()
+# Configuração CORS mais específica para resolver problemas de preflight
+cors = CORS(
+    resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]}},
+    supports_credentials=True,
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"]
+)
 migrate = Migrate()

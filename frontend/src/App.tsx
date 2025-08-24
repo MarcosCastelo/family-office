@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { FamilyProvider, useFamily } from './contexts/FamilyContext';
 import { ToastProvider } from './components/Toast';
 import Header from './components/Header';
+import Navigation from './components/Navigation';
 import Dashboard from './pages/Dashboard';
 import Assets from './pages/Assets';
 import Transactions from './pages/Transactions';
@@ -13,9 +14,39 @@ import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 import Login from './pages/Login';
 
-function AppContent() {
-  const { isAuthenticated } = useAuth();
-  const { families, selectedFamilyId, setSelectedFamilyId, loading: familiesLoading, error: familiesError } = useFamily();
+// Componente para verificar se o usuário é admin
+function AdminGuard({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  
+  // Verificar se o usuário tem permissão de admin
+  const isAdmin = user && user.permissions && (
+    user.permissions.includes('admin') || 
+    user.permissions.includes('admin_system') || 
+    user.permissions.includes('admin_users')
+  );
+  
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+// Componente para o painel administrativo
+function AdminApp() {
+  return (
+    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      <Header />
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px', marginTop: 24, marginBottom: 24 }}>
+        <AdminPanel />
+      </div>
+    </div>
+  );
+}
+
+// Componente para a aplicação principal (usuários comuns)
+function MainApp() {
+  const { selectedFamilyId } = useFamily();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
 
@@ -37,10 +68,6 @@ function AppContent() {
     }
   }, [activeTab]);
 
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -55,40 +82,17 @@ function AppContent() {
         return <Upload />;
       case 'profile':
         return <Profile />;
-
       default:
         return <Dashboard />;
     }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
-    }}>
-      <Header 
-        selectedFamilyId={selectedFamilyId}
-        onFamilyChange={setSelectedFamilyId}
-        families={families}
-        familiesLoading={familiesLoading}
-        familiesError={familiesError}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
-      
-      <div style={{
-        maxWidth: 1400,
-        margin: '0 auto',
-        padding: '24px',
-        background: 'white',
-        borderRadius: 16,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-        border: '1px solid rgba(255,255,255,0.2)',
-        backdropFilter: 'blur(10px)',
-        marginTop: 24,
-        marginBottom: 24
-      }}>
-        <div style={{ marginTop: 0 }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      <Header />
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px', marginTop: 24, marginBottom: 24 }}>
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <div style={{ marginTop: 24 }}>
           {renderContent()}
         </div>
       </div>
@@ -96,25 +100,62 @@ function AppContent() {
   );
 }
 
-function AdminRoute() {
-  return <AdminPanel />;
+function AppContent() {
+  const { isAuthenticated, user } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  // Verificar se o usuário é admin
+  const isAdmin = user && user.permissions && (
+    user.permissions.includes('admin') || 
+    user.permissions.includes('admin_system') || 
+    user.permissions.includes('admin_users')
+  );
+
+  return (
+    <Routes>
+      {/* Rota para administradores */}
+      <Route path="/admin" element={
+        <AdminGuard>
+          <AdminApp />
+        </AdminGuard>
+      } />
+      
+      {/* Rota para usuários comuns */}
+      <Route path="/dashboard" element={<MainApp />} />
+      <Route path="/assets" element={<MainApp />} />
+      <Route path="/transactions" element={<MainApp />} />
+      <Route path="/risk" element={<MainApp />} />
+      <Route path="/upload" element={<MainApp />} />
+      <Route path="/profile" element={<MainApp />} />
+      
+      {/* Rota padrão - redirecionar baseado no tipo de usuário */}
+      <Route path="/" element={
+        isAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />
+      } />
+      
+      {/* Rota para qualquer caminho não encontrado */}
+      <Route path="*" element={
+        isAdmin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />
+      } />
+    </Routes>
+  );
 }
 
-export default function App() {
+function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/admin" element={<AdminRoute />} />
-        <Route path="*" element={
-          <AuthProvider>
-            <FamilyProvider>
-              <ToastProvider>
-                <AppContent />
-              </ToastProvider>
-            </FamilyProvider>
-          </AuthProvider>
-        } />
-      </Routes>
+      <AuthProvider>
+        <FamilyProvider>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </FamilyProvider>
+      </AuthProvider>
     </Router>
   );
 }
+
+export default App;

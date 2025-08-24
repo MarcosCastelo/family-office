@@ -21,8 +21,8 @@ class TestTransactionController:
         self.user.set_password("password123")
         db.session.add(self.user)
         
-        # Create test family
-        self.family = Family(name="Test Family")
+        # Create test family with sufficient cash balance
+        self.family = Family(name="Test Family", cash_balance=10000.0)  # Give family enough cash
         db.session.add(self.family)
         
         # Associate user with family

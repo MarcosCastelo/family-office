@@ -8,8 +8,10 @@ import {
   TrendingUp,
   Shield,
   FileText,
-  Activity
+  Activity,
+  Settings
 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface NavigationProps {
   activeTab: string;
@@ -17,6 +19,13 @@ interface NavigationProps {
 }
 
 export default function Navigation({ activeTab, onTabChange }: NavigationProps) {
+  const { user } = useAuth();
+  const isAdmin = user && user.permissions && (
+    user.permissions.includes('admin') || 
+    user.permissions.includes('admin_system') || 
+    user.permissions.includes('admin_users')
+  );
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'assets', label: 'Ativos', icon: PieChart },
@@ -25,6 +34,20 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
     { id: 'upload', label: 'Upload', icon: Upload },
     { id: 'profile', label: 'Perfil', icon: User }
   ];
+
+  // Adicionar item administrativo se o usuário for admin
+  if (isAdmin) {
+    menuItems.push({ id: 'admin', label: 'Admin', icon: Settings });
+  }
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'admin') {
+      // Navegar para o painel administrativo
+      window.location.href = '/admin';
+    } else {
+      onTabChange(tabId);
+    }
+  };
 
   return (
     <nav style={{
@@ -45,7 +68,7 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
           return (
             <button
               key={item.id}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => handleTabChange(item.id)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -55,8 +78,10 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
                 border: 'none',
                 background: isActive
                   ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  : item.id === 'admin'
+                  ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
                   : 'transparent',
-                color: isActive ? 'white' : '#666',
+                color: isActive || item.id === 'admin' ? 'white' : '#666',
                 cursor: 'pointer',
                 fontSize: 14,
                 fontWeight: isActive ? 600 : 500,
@@ -67,13 +92,13 @@ export default function Navigation({ activeTab, onTabChange }: NavigationProps) 
                 overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
-                if (!isActive) {
+                if (!isActive && item.id !== 'admin') {
                   e.currentTarget.style.background = '#f8f9fa';
                   e.currentTarget.style.color = '#333';
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isActive) {
+                if (!isActive && item.id !== 'admin') {
                   e.currentTarget.style.background = 'transparent';
                   e.currentTarget.style.color = '#666';
                 }

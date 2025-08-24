@@ -4,9 +4,10 @@ from datetime import date
 
 from app import create_app
 from app.config.extensions import db as _db
-from app.models.user import User
-from app.models.family import Family
-from app.models.permission import Permission
+
+# Import all models to ensure they are registered with SQLAlchemy
+from app.models import User, Family, Permission, Asset, Alert, Transaction, SuitabilityProfile, QuoteHistory, JobLog
+
 from app.constants.permissions import ALL_PERMISSIONS
 
 @pytest.fixture(scope="session")
@@ -16,7 +17,10 @@ def app():
     app.config.update({
         "TESTING": True,
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "JWT_SECRET_KEY": "testsecret"
+        "JWT_SECRET_KEY": "testsecret",
+        "JWT_TOKEN_LOCATION": ["headers"],
+        "JWT_HEADER_NAME": "Authorization",
+        "JWT_HEADER_TYPE": "Bearer"
     })
     return app
 
@@ -59,16 +63,20 @@ def admin_user_fixture(db):
     user.set_password("password123")
     db.session.add(user)
     db.session.commit()
+    
     # Criar todas as permissões e atribuir ao admin
     from app.models.permission import Permission
     from app.constants.permissions import ALL_PERMISSIONS
+    
+    # Verificar e criar permissões apenas se não existirem
     for permission_name in ALL_PERMISSIONS:
-        permission = Permission(name=permission_name)
-        db.session.add(permission)
-    # Garante permissão 'admin' explícita
-    if not Permission.query.filter_by(name="admin").first():
-        db.session.add(Permission(name="admin"))
+        existing_permission = Permission.query.filter_by(name=permission_name).first()
+        if not existing_permission:
+            permission = Permission(name=permission_name)
+            db.session.add(permission)
+    
     db.session.commit()
+    
     # Atribuir todas as permissões ao usuário admin
     all_permissions = Permission.query.all()
     user.permissions.extend(all_permissions)
