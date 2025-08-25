@@ -8,9 +8,6 @@ class AssetSchema(Schema):
     name = fields.Str(required=True)
     asset_type = fields.Str(required=True, validate=validate.OneOf(ASSET_TYPE_CHOICES))
     
-    # Legacy value field - now calculated from transactions
-    value = fields.Float(required=False, allow_none=True)
-    
     # Dynamic calculated fields
     current_quantity = fields.Float(dump_only=True)
     current_value = fields.Float(dump_only=True)
@@ -20,10 +17,18 @@ class AssetSchema(Schema):
     realized_gain_loss = fields.Float(dump_only=True)
     unrealized_gain_loss = fields.Float(dump_only=True)
     
-    acquisition_date = fields.Date(required=False, allow_none=True)
+    # Asset-specific properties
+    ticker = fields.Str(dump_only=True)
+    indexador = fields.Str(dump_only=True)
+    vencimento = fields.Method("get_vencimento", dump_only=True)
+    coin_id = fields.Str(dump_only=True)
+    currency = fields.Str(dump_only=True)
+    asset_class = fields.Str(dump_only=True)
+    
+    acquisition_date = fields.Method("get_acquisition_date", required=False, allow_none=True)
     details = fields.Dict(required=False, allow_none=True)
     family_id = fields.Int(required=True)
-    created_at = fields.DateTime(dump_only=True)
+    created_at = fields.Method("get_created_at", dump_only=True)
     
     # Include transaction count for quick reference
     transaction_count = fields.Method("get_transaction_count", dump_only=True)
@@ -31,6 +36,45 @@ class AssetSchema(Schema):
     def get_transaction_count(self, obj):
         """Get the number of transactions for this asset"""
         return len(obj.transactions) if hasattr(obj, 'transactions') and obj.transactions else 0
+    
+    def get_vencimento(self, obj):
+        """Get vencimento as a proper date object"""
+        vencimento = obj.vencimento
+        if vencimento:
+            if isinstance(vencimento, str):
+                try:
+                    return datetime.strptime(vencimento, '%Y-%m-%d').date()
+                except ValueError:
+                    return None
+            elif hasattr(vencimento, 'isoformat'):
+                return vencimento
+        return None
+    
+    def get_acquisition_date(self, obj):
+        """Get acquisition_date as a proper date object"""
+        acquisition_date = obj.acquisition_date
+        if acquisition_date:
+            if isinstance(acquisition_date, str):
+                try:
+                    return datetime.strptime(acquisition_date, '%Y-%m-%d').date()
+                except ValueError:
+                    return None
+            elif hasattr(acquisition_date, 'isoformat'):
+                return acquisition_date
+        return None
+    
+    def get_created_at(self, obj):
+        """Get created_at as a proper datetime object"""
+        created_at = obj.created_at
+        if created_at:
+            if isinstance(created_at, str):
+                try:
+                    return datetime.fromisoformat(created_at)
+                except ValueError:
+                    return None
+            elif hasattr(created_at, 'isoformat'):
+                return created_at
+        return None
     
     @pre_load
     def convert_date_strings(self, data, **kwargs):

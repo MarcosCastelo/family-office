@@ -31,10 +31,13 @@ export default function Assets() {
   const [formData, setFormData] = useState({
     name: '',
     asset_type: 'renda_fixa',
-    value: '',
     acquisition_date: '',
     details: {},
-    ticker: ''
+    ticker: '',
+    indexador: 'CDI',
+    vencimento: new Date().toISOString().split('T')[0],
+    coin_id: '',
+    currency: 'USD'
   });
 
   useEffect(() => {
@@ -75,18 +78,21 @@ export default function Assets() {
       const assetData = {
         name: formData.name,
         asset_type: formData.asset_type,
-        value: parseFloat(formData.value),
         acquisition_date: formData.acquisition_date,
         family_id: selectedFamilyId,
         details: {
           ...formData.details,
           // Adicionar ticker para renda variável
           ...(formData.asset_type === 'renda_variavel' && formData.ticker ? { ticker: formData.ticker } : {}),
-          // Adicionar outros campos específicos por tipo de ativo
+          // Adicionar campos específicos para renda fixa
           ...(formData.asset_type === 'renda_fixa' && {
-            indexador: (formData.details as any)?.indexador || 'CDI',
-            vencimento: (formData.details as any)?.vencimento || new Date().toISOString().split('T')[0]
-          })
+            indexador: formData.indexador,
+            vencimento: formData.vencimento
+          }),
+          // Adicionar campos específicos para criptomoedas
+          ...(formData.asset_type === 'criptomoeda' && formData.coin_id ? { coin_id: formData.coin_id } : {}),
+          // Adicionar campos específicos para moedas estrangeiras
+          ...(formData.asset_type === 'moeda_estrangeira' && formData.currency ? { currency: formData.currency } : {})
         }
       };
 
@@ -130,14 +136,17 @@ export default function Assets() {
 
   const handleEdit = (asset: Asset) => {
     setEditingAsset(asset);
-    setFormData({
-      name: asset.name,
-      asset_type: asset.asset_type,
-      value: (asset.value || 0).toString(),
-      acquisition_date: asset.acquisition_date || '',
-      details: asset.details,
-      ticker: asset.details?.ticker || ''
-    });
+          setFormData({
+        name: asset.name,
+        asset_type: asset.asset_type,
+        acquisition_date: asset.acquisition_date || '',
+        details: asset.details,
+        ticker: asset.details?.ticker || '',
+        indexador: asset.details?.indexador || 'CDI',
+        vencimento: asset.details?.vencimento || new Date().toISOString().split('T')[0],
+        coin_id: asset.details?.coin_id || '',
+        currency: asset.details?.currency || 'USD'
+      });
     setShowForm(true);
   };
 
@@ -145,10 +154,13 @@ export default function Assets() {
     setFormData({
       name: '',
       asset_type: 'renda_fixa',
-      value: '',
       acquisition_date: '',
       details: {},
-      ticker: ''
+      ticker: '',
+      indexador: 'CDI',
+      vencimento: new Date().toISOString().split('T')[0],
+      coin_id: '',
+      currency: 'USD'
     });
   };
 
@@ -172,7 +184,9 @@ export default function Assets() {
       estrategico: 'Estratégico',
       internacional: 'Internacional',
       alternativo: 'Alternativo',
-      protecao: 'Proteção'
+      protecao: 'Proteção',
+      criptomoeda: 'Criptomoeda',
+      moeda_estrangeira: 'Moeda Estrangeira'
     };
     return labels[type] || type;
   };
@@ -371,27 +385,29 @@ export default function Assets() {
                   <option value="internacional">Internacional</option>
                   <option value="alternativo">Alternativo</option>
                   <option value="protecao">Proteção</option>
+                  <option value="criptomoeda">Criptomoeda</option>
+                  <option value="moeda_estrangeira">Moeda Estrangeira</option>
                 </select>
               </div>
 
-              <div>
+                            <div>
                 <label style={{ display: 'block', marginBottom: 4, color: '#666', fontSize: 14 }}>
-                  Valor (R$) *
+                  Valor
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.value}
-                  onChange={(e) => setFormData({...formData, value: e.target.value})}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: '1px solid #ddd',
-                    fontSize: 14
-                  }}
-                />
+                <div style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #ddd',
+                  fontSize: 14,
+                  backgroundColor: '#f5f5f5',
+                  color: '#666'
+                }}>
+                  Valor será calculado automaticamente a partir das transações
+                </div>
+                <small style={{ color: '#666', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                  O valor do ativo é calculado automaticamente baseado nas transações de compra e venda
+                </small>
               </div>
 
               <div>
@@ -430,7 +446,120 @@ export default function Assets() {
                       border: '1px solid #ddd',
                       fontSize: 14
                     }}
+                    placeholder="Ex: PETR4.SA, AAPL, GOOGL"
                   />
+                  <small style={{ color: '#666', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                    Brasileiro: PETR4.SA, VALE3.SA | Internacional: AAPL, GOOGL, MSFT
+                  </small>
+                </div>
+              )}
+
+              {formData.asset_type === 'renda_fixa' && (
+                <>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 4, color: '#666', fontSize: 14 }}>
+                      Indexador *
+                    </label>
+                    <select
+                      value={formData.indexador}
+                      onChange={(e) => setFormData({...formData, indexador: e.target.value})}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #ddd',
+                        fontSize: 14
+                      }}
+                    >
+                      <option value="CDI">CDI</option>
+                      <option value="IPCA">IPCA</option>
+                      <option value="SELIC">SELIC</option>
+                      <option value="IGPM">IGPM</option>
+                      <option value="LIBOR">LIBOR</option>
+                      <option value="EURIBOR">EURIBOR</option>
+                      <option value="SOFR">SOFR</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 4, color: '#666', fontSize: 14 }}>
+                      Vencimento *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.vencimento}
+                      onChange={(e) => setFormData({...formData, vencimento: e.target.value})}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #ddd',
+                        fontSize: 14
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {formData.asset_type === 'criptomoeda' && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: 4, color: '#666', fontSize: 14 }}>
+                    Criptomoeda *
+                  </label>
+                  <select
+                    value={formData.coin_id}
+                    onChange={(e) => setFormData({...formData, coin_id: e.target.value})}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #ddd',
+                      fontSize: 14
+                    }}
+                  >
+                    <option value="">Selecione uma criptomoeda</option>
+                    <option value="bitcoin">Bitcoin (BTC)</option>
+                    <option value="ethereum">Ethereum (ETH)</option>
+                    <option value="binancecoin">Binance Coin (BNB)</option>
+                    <option value="cardano">Cardano (ADA)</option>
+                    <option value="solana">Solana (SOL)</option>
+                    <option value="polkadot">Polkadot (DOT)</option>
+                    <option value="dogecoin">Dogecoin (DOGE)</option>
+                    <option value="avalanche-2">Avalanche (AVAX)</option>
+                    <option value="chainlink">Chainlink (LINK)</option>
+                    <option value="polygon">Polygon (MATIC)</option>
+                  </select>
+                </div>
+              )}
+
+              {formData.asset_type === 'moeda_estrangeira' && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: 4, color: '666', fontSize: 14 }}>
+                    Moeda *
+                  </label>
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => setFormData({...formData, currency: e.target.value})}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #ddd',
+                      fontSize: 14
+                    }}
+                  >
+                    <option value="USD">Dólar Americano (USD)</option>
+                    <option value="EUR">Euro (EUR)</option>
+                    <option value="GBP">Libra Esterlina (GBP)</option>
+                    <option value="JPY">Iene Japonês (JPY)</option>
+                    <option value="CHF">Franco Suíço (CHF)</option>
+                    <option value="CAD">Dólar Canadense (CAD)</option>
+                    <option value="AUD">Dólar Australiano (AUD)</option>
+                    <option value="CNY">Yuan Chinês (CNY)</option>
+                  </select>
                 </div>
               )}
             </div>
@@ -569,7 +698,7 @@ export default function Assets() {
                       <span style={{ fontWeight: 600, color: asset.current_value !== undefined ? '#22c55e' : '#667eea' }}>
                         {asset.current_value !== undefined 
                           ? formatCurrency(asset.current_value)
-                          : formatCurrency(asset.value || 0)
+                          : formatCurrency(asset.current_value || 0)
                         }
                       </span>
                     </div>

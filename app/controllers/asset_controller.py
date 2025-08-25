@@ -3,6 +3,7 @@ from app.models.asset import Asset
 from app.schema.asset_schema import AssetSchema
 from app.config.extensions import db
 from app.decorators.family_access import require_family
+from app.services.asset_validation_service import AssetValidationService
 from sqlalchemy import cast, String
 
 asset_schema = AssetSchema()
@@ -71,23 +72,64 @@ def create_asset_controller(req):
     user = db.session.get(User, user_id)
     if not user or not any(f.id == int(family_id) for f in user.families):
         return jsonify({"error": "Acesso à familia negado"}), 403
-    # Validação de valor positivo
-    if data.get("value", 0) is None or data["value"] <= 0:
-        return jsonify({"error": "O valor do ativo deve ser positivo"}), 400
+    # Validação do nome do ativo
+    name_validation = AssetValidationService.validate_asset_name(data["name"])
+    if not name_validation[0]:
+        return jsonify({"error": name_validation[1]}), 400
+    
     # Validação de duplicidade de nome/ticker na família
     query = Asset.query.filter_by(family_id=family_id, name=data["name"])
     if data.get("asset_type") == "renda_variavel" and data.get("details", {}).get("ticker"):
         query = query.filter(cast(Asset.details["ticker"], String) == str(data["details"]["ticker"]))
     if query.first():
         return jsonify({"error": "Já existe ativo com este nome/ticker nesta família"}), 400
+    
     # Validação de campos obrigatórios por classe
     details = data.get("details", {})
-    if data.get("asset_type") == "renda_fixa":
-        if not details.get("indexador") or not details.get("vencimento"):
-            return jsonify({"error": "Renda fixa exige indexador e vencimento"}), 400
-    if data.get("asset_type") == "renda_variavel":
-        if not details.get("ticker"):
+    asset_type = data.get("asset_type")
+    
+    # Validação específica por tipo de ativo
+    if asset_type == "renda_fixa":
+        fixed_income_validation = AssetValidationService.validate_fixed_income_fields(details)
+        if not fixed_income_validation[0]:
+            return jsonify({"error": fixed_income_validation[1]}), 400
+    
+    elif asset_type == "renda_variavel":
+        ticker = details.get("ticker", "")
+        if not ticker:
             return jsonify({"error": "Renda variável exige ticker"}), 400
+        
+        # Normalizar e validar ticker
+        normalized_ticker = AssetValidationService.normalize_ticker(ticker, asset_type, 'B3')
+        ticker_validation = AssetValidationService.validate_ticker(normalized_ticker, asset_type, 'B3')
+        if not ticker_validation[0]:
+            return jsonify({"error": ticker_validation[1]}), 400
+        
+        # Atualizar ticker normalizado
+        details["ticker"] = normalized_ticker
+    
+    elif asset_type == "criptomoeda":
+        coin_id = details.get("coin_id", "")
+        if not coin_id:
+            return jsonify({"error": "Criptomoeda exige ID da moeda"}), 400
+        
+        # Normalizar e validar coin_id
+        normalized_coin_id = AssetValidationService.normalize_ticker(coin_id, asset_type)
+        coin_validation = AssetValidationService.validate_ticker(normalized_coin_id, asset_type)
+        if not coin_validation[0]:
+            return jsonify({"error": coin_validation[1]}), 400
+        
+        # Atualizar coin_id normalizado
+        details["coin_id"] = normalized_coin_id
+    
+    elif asset_type == "moeda_estrangeira":
+        currency = details.get("currency", "")
+        if not currency:
+            return jsonify({"error": "Moeda estrangeira exige código da moeda"}), 400
+        
+        currency_validation = AssetValidationService.validate_ticker(currency, asset_type)
+        if not currency_validation[0]:
+            return jsonify({"error": currency_validation[1]}), 400
     asset = Asset(**data)
     db.session.add(asset)
     db.session.commit()

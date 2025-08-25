@@ -6,9 +6,9 @@ export interface Asset {
   id?: number;
   name: string;
   asset_type: string;
-  value?: number; // Legacy field - now optional
   family_id: number;
   details?: any;
+  
   // Dynamic calculated fields from transactions
   current_quantity?: number;
   current_value?: number;
@@ -18,6 +18,15 @@ export interface Asset {
   realized_gain_loss?: number;
   unrealized_gain_loss?: number;
   transaction_count?: number;
+  
+  // Asset-specific properties
+  ticker?: string;
+  indexador?: string;
+  vencimento?: string;
+  coin_id?: string;
+  currency?: string;
+  asset_class?: string;
+  
   acquisition_date?: string;
   created_at?: string;
 }

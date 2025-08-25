@@ -333,6 +333,27 @@ graph TD
   - ✅ Seletor de família centralizado
   - ✅ Menu de usuário com opções avançadas
 
+### [K] Melhorias na Entidade Asset ✅ **IMPLEMENTADO**
+- **K1. Otimização de Modelo:**
+  - ✅ Remoção do campo `value` deprecated
+  - ✅ Implementação de cache para cálculos pesados
+  - ✅ Propriedades específicas por tipo de ativo
+- **K2. Validação Robusta:**
+  - ✅ Validação de tickers por bolsa de valores
+  - ✅ Normalização automática de símbolos
+  - ✅ Validação de campos obrigatórios por classe
+  - ✅ Suporte a criptomoedas e moedas estrangeiras
+- **K3. Cálculos Precisos:**
+  - ✅ Cálculo FIFO de custo médio
+  - ✅ Ganhos/perdas realizados por lote
+  - ✅ Métricas de risco por ativo
+  - ✅ Integração com histórico de cotações
+- **K4. Interface Melhorada:**
+  - ✅ Formulários dinâmicos por tipo de ativo
+  - ✅ Sugestões de tickers e campos
+  - ✅ Validação em tempo real
+  - ✅ Suporte a múltiplas bolsas
+
 ---
 
 ## 🔄 Como Usar este Backlog
